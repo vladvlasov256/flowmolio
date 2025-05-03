@@ -1,6 +1,6 @@
 {
   "name": "flowmolio",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "main": "dist/index.js",
   "type": "module",
   "module": "dist/index.esm.js",
@@ -25,8 +25,8 @@
   "license": "MIT",
   "sideEffects": false,
   "peerDependencies": {
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
   },
   "publishConfig": {
     "access": "public"
@@ -40,7 +40,7 @@
     "@rollup/plugin-node-resolve": "^16.0.1",
     "@rollup/plugin-typescript": "^12.1.2",
     "@types/jest": "^29.5.14",
-    "@types/react": "^19.1.2",
+    "@types/react": "^18.2.0",
     "@typescript-eslint/eslint-plugin": "^8.31.1",
     "@typescript-eslint/parser": "^8.31.1",
     "eslint": "^9.26.0",
@@ -53,6 +53,7 @@
     "prettier": "^3.5.3",
     "rollup": "^4.40.1",
     "rollup-plugin-dts": "^6.2.1",
+    "rollup-plugin-peer-deps-external": "^2.2.4",
     "ts-jest": "^29.3.2",
     "typescript": "^5.8.3"
   }

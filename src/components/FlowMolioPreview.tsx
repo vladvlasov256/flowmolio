@@ -1,14 +1,14 @@
-import React, { useMemo } from 'react';
+import React, { forwardRef, useMemo } from 'react';
 
 import { PreviewObject } from '../types';
 import { renderFlowMolio } from '../utils/renderFlowMolio';
 
-interface PreviewProps extends React.HTMLAttributes<HTMLDivElement> {
+interface FlowMolioPreviewProps extends React.HTMLAttributes<HTMLDivElement> {
   previewObject: PreviewObject;
   dataSources: any;
 }
 
-const Preview: React.FC<PreviewProps> = ({ previewObject, dataSources, ...divProps }) => {
+export const FlowMolioPreview = forwardRef<HTMLDivElement, FlowMolioPreviewProps>(({ previewObject, dataSources, ...divProps }, ref) => {
     const renderedSvg = useMemo(() => {
     if (previewObject && dataSources) {
       return renderFlowMolio(previewObject, dataSources);
@@ -17,8 +17,6 @@ const Preview: React.FC<PreviewProps> = ({ previewObject, dataSources, ...divPro
   }, [previewObject, dataSources]);
 
   return (
-      <div dangerouslySetInnerHTML={{ __html: renderedSvg }} {...divProps}  />
+      <div ref={ref} dangerouslySetInnerHTML={{ __html: renderedSvg }} {...divProps}  />
   );
-};
-
-export default Preview;
+});

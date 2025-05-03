@@ -1,6 +1,7 @@
 import typescript from '@rollup/plugin-typescript';
 import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
+import external from 'rollup-plugin-peer-deps-external';
 
 import packageJson from './package.json' with { type: 'json' };
 
@@ -20,11 +21,13 @@ export default [
       },
     ],
     plugins: [
+      external(),
       resolve(),
       commonjs(),
       typescript({
         tsconfig: './tsconfig.json',
-        declarationDir: './dist'
+        declarationDir: './dist',
+        jsx: 'react',
       }),
     ],
     external: ['react', 'react-dom'],
