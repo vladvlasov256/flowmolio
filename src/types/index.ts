@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars */
-export const enum ColorRole {
+export enum ColorRole {
   FILL = 'fill',
   STROKE = 'stroke',
   STOP_COLOR = 'stop-color'
