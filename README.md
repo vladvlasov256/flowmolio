@@ -36,7 +36,7 @@ FlowMolio creates a seamless link between your CMS API and Figma designs, allowi
 
 ![FlowMolio Studio screen recording](showcase/studio.webp)
 
-## FlowMolio Sample
+## Sample App
 
 Check out the [sample code](https://github.com/vladvlasov256/flowmolio-sample) or try the [live demo](https://try.flowmol.io/)!
 
