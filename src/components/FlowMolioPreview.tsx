@@ -1,4 +1,4 @@
-import parse from 'html-react-parser';
+import parse from 'node-html-parser';
 import React, { useMemo } from 'react';
 
 import { PreviewObject } from '../types';
@@ -17,14 +17,30 @@ export const FlowMolioPreview: React.FC<FlowMolioPreviewProps> = ({ previewObjec
     return ""
   }, [previewObject, dataSources]);
 
-  const svg = useMemo(() => renderedSvg ? parse(renderedSvg) : null, [renderedSvg]);
+  const svg = useMemo(() => {
+    if (!renderedSvg) {
+      return null;
+    }
+    const parsedSVG = parse(renderedSvg)
+    const svgElement = parsedSVG.querySelector('svg');
+    if (!svgElement) {
+      return null;
+    }
 
-  if (React.isValidElement<SVGSVGElement>(svg)) {
-    const validSvgProps = Object.fromEntries(
-      Object.entries(svgProps).filter(([key]) => key in SVGElement.prototype)
-    );
-    return React.cloneElement(svg, validSvgProps);
+    const props: Record<string, string> = {};
+    Object.entries(svgElement.attributes).forEach(([key, value]) => {
+      props[key === 'class' ? 'className' : key] = value;
+    });
+
+    return {
+      props,
+      innerHTML: svgElement.innerHTML,
+    };
+  }, [renderedSvg]);
+
+  if (!svg) {
+    return null;
   }
 
-  return <svg {...svgProps} />;
+  return <svg dangerouslySetInnerHTML={{__html: svg.innerHTML}} {...svg.props} {...svgProps} />;
 };
