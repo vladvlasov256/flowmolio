@@ -1,5 +1,9 @@
 # FlowMolio
 
+[![Tests](https://github.com/vladvlasov256/flowmolio/actions/workflows/test.yml/badge.svg)](https://github.com/vladvlasov256/flowmolio/actions/workflows/test.yml)
+[![Coverage](https://codecov.io/gh/vladvlasov256/flowmolio/branch/main/graph/badge.svg)](https://codecov.io/gh/vladvlasov256/flowmolio)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 A lightweight React library for real-time mockups and prototypes.
 
 ## Description
