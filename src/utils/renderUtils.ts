@@ -1,3 +1,5 @@
+import { HTMLElement } from 'node-html-parser';
+
 import { DataBindingContext } from '../types';
 import { SVGElementNode } from '../types';
 
@@ -56,7 +58,7 @@ export function applyDataBindings({ svgTree, connections, dataSources, nodes = [
         
         if (targetElement.innerHTML) {
           // If there's tspan content, we need to update the content of each tspan
-          const tempDiv = document.createElement('div');
+          const tempDiv = new HTMLElement('div', {});
           tempDiv.innerHTML = targetElement.innerHTML;
           
           // Get all tspans

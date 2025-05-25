@@ -1,10 +1,11 @@
+import parse, {type HTMLElement} from 'node-html-parser';
+
 import { SVGElementNode } from "../types";
 
 export function parseSVG(svgString: string): SVGElementNode {
   try {
     // Create a DOM parser
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(svgString, 'image/svg+xml');
+    const doc = parse(svgString);
     
     // Check for parsing errors
     const parserError = doc.querySelector('parsererror');
@@ -25,11 +26,11 @@ export function parseSVG(svgString: string): SVGElementNode {
   }
 }
 
-function parseElement(element: Element): SVGElementNode {
+function parseElement(element: HTMLElement): SVGElementNode {
   // Get attributes
   const attributes: Record<string, string> = {};
-  Array.from(element.attributes).forEach(attr => {
-    attributes[attr.name] = attr.value;
+  Object.entries(element.attributes).forEach(([key, value]) => {
+    attributes[key] = value;
   });
   
   // Store the original ID if it exists
