@@ -5,6 +5,7 @@ import reactPlugin from 'eslint-plugin-react';
 import reactHooksPlugin from 'eslint-plugin-react-hooks';
 import importPlugin from 'eslint-plugin-import';
 import prettierConfig from 'eslint-config-prettier';
+import jestPlugin from 'eslint-plugin-jest';
 
 export default [
   eslint.configs.recommended,
@@ -15,6 +16,7 @@ export default [
       'react': reactPlugin,
       'react-hooks': reactHooksPlugin,
       'import': importPlugin,
+      'jest': jestPlugin,
     },
     languageOptions: {
       ecmaVersion: 2023,
@@ -24,12 +26,13 @@ export default [
         ecmaFeatures: {
           jsx: true,
         },
-        project: './tsconfig.json',
+        project: './tsconfig.eslint.json',
       },
       globals: {
         document: 'readonly',
         window: 'readonly',
         React: 'readonly',
+        ...jestPlugin.environments.globals.globals,
       },
     },
     settings: {
@@ -67,6 +70,7 @@ export default [
       './eslint.config.js',
       './rollup.config.js',
       './.prettierrc.js',
+      './jest.config.js',
     ]
   },
   prettierConfig
