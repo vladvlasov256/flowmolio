@@ -40,30 +40,37 @@ function applyColorNodes(
 
     // Get all elements in the SVG tree
     const applyColorToElements = (element: any) => {
-      // Apply colors based on enabled roles, but only if they match the target color
-      if (
-        colorNode.enabledRoles[ColorRole.FILL] &&
-        element.attributes.fill &&
-        element.attributes.fill.toLowerCase() === targetColor.toLowerCase()
-      ) {
-        element.attributes.fill = sourceValue;
-      }
+      // If elementIds is specified and not empty, only apply to those specific elements
+      const shouldApplyToElement = !colorNode.elementIds || 
+        colorNode.elementIds.length === 0 || 
+        (element.id && colorNode.elementIds.includes(element.id));
 
-      if (
-        colorNode.enabledRoles[ColorRole.STROKE] &&
-        element.attributes.stroke &&
-        element.attributes.stroke.toLowerCase() === targetColor.toLowerCase()
-      ) {
-        element.attributes.stroke = sourceValue;
-      }
+      if (shouldApplyToElement) {
+        // Apply colors based on enabled roles, but only if they match the target color
+        if (
+          colorNode.enabledRoles[ColorRole.FILL] &&
+          element.attributes.fill &&
+          element.attributes.fill.toLowerCase() === targetColor.toLowerCase()
+        ) {
+          element.attributes.fill = sourceValue;
+        }
 
-      if (
-        colorNode.enabledRoles[ColorRole.STOP_COLOR] &&
-        element.tagName === 'stop' &&
-        element.attributes['stop-color'] &&
-        element.attributes['stop-color'].toLowerCase() === targetColor.toLowerCase()
-      ) {
-        element.attributes['stop-color'] = sourceValue;
+        if (
+          colorNode.enabledRoles[ColorRole.STROKE] &&
+          element.attributes.stroke &&
+          element.attributes.stroke.toLowerCase() === targetColor.toLowerCase()
+        ) {
+          element.attributes.stroke = sourceValue;
+        }
+
+        if (
+          colorNode.enabledRoles[ColorRole.STOP_COLOR] &&
+          element.tagName === 'stop' &&
+          element.attributes['stop-color'] &&
+          element.attributes['stop-color'].toLowerCase() === targetColor.toLowerCase()
+        ) {
+          element.attributes['stop-color'] = sourceValue;
+        }
       }
 
       // Process children recursively

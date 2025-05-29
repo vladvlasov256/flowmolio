@@ -48,6 +48,7 @@ export interface ColorNodeData extends BaseNodeData {
     [ColorRole.STROKE]: boolean;
     [ColorRole.STOP_COLOR]: boolean;
   };
+  elementIds?: string[];
 }
 
 // Union type for all node types

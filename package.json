@@ -1,6 +1,6 @@
 {
   "name": "flowmolio",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "main": "dist/index.js",
   "type": "module",
   "module": "dist/index.esm.js",
