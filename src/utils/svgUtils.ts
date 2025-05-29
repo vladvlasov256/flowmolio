@@ -1,60 +1,68 @@
-import parse, {type HTMLElement} from 'node-html-parser';
+import parse, { type HTMLElement } from 'node-html-parser';
 
-import { SVGElementNode } from "../types";
+import { SVGElementNode } from '../types';
+
+import { IdGenerator } from './IdGenerator';
 
 export function parseSVG(svgString: string): SVGElementNode {
   try {
     // Create a DOM parser
     const doc = parse(svgString);
-    
+
     // Check for parsing errors
     const parserError = doc.querySelector('parsererror');
     if (parserError) {
       throw new Error('SVG parsing error: ' + parserError.textContent);
     }
-    
+
     // Get the root SVG element
     const svgElement = doc.querySelector('svg');
     if (!svgElement) {
       throw new Error('No SVG element found');
     }
-    
+
+    // Create ID generator for deterministic IDs
+    const idGenerator = IdGenerator.fromSVGString(svgString);
+
     // Parse the SVG hierarchy
-    return parseElement(svgElement);
+    return parseElement(svgElement, idGenerator);
   } catch (error) {
     throw new Error('SVG parsing failed: ' + (error as Error).message);
   }
 }
 
-function parseElement(element: HTMLElement): SVGElementNode {
+function parseElement(element: HTMLElement, idGenerator: IdGenerator): SVGElementNode {
   // Get attributes
   const attributes: Record<string, string> = {};
   Object.entries(element.attributes).forEach(([key, value]) => {
     attributes[key] = value;
   });
-  
+
   // Store the original ID if it exists
   const originalId = element.id || undefined;
-  
-  // Get ID (generate one if not present)
-  const id = originalId || `el-${Math.random().toString(36).substr(2, 9)}`;
-  
+
+  // Get ID (generate deterministic one if not present)
+  const id = originalId || idGenerator.next(element.tagName.toLowerCase());
+
   // Determine if it's a text element
   const isText = element.tagName.toLowerCase() === 'text';
-  
+
   // Determine if it's an image element
   const isImage = element.tagName.toLowerCase() === 'image';
-  
+
   // For text elements, capture the innerHTML with tspans intact
   let innerHTML: string | undefined;
   let textContent: string | undefined;
-  
+
   if (isText) {
     innerHTML = element.innerHTML;
     // Also keep textContent for compatibility
     textContent = element.textContent || '';
   }
-  
+
+  // Enter deeper level for children parsing
+  idGenerator.enterLevel();
+
   // Parse children (skip tspan children for text elements since we're capturing innerHTML)
   const children: SVGElementNode[] = [];
   if (!isText) {
@@ -63,18 +71,21 @@ function parseElement(element: HTMLElement): SVGElementNode {
       if (isText && child.tagName.toLowerCase() === 'tspan') {
         return;
       }
-      children.push(parseElement(child));
+      children.push(parseElement(child, idGenerator));
     });
   } else {
     // For text elements, don't parse tspan children
     Array.from(element.children).forEach(child => {
       // Only include non-tspan children if there are any
       if (child.tagName.toLowerCase() !== 'tspan') {
-        children.push(parseElement(child));
+        children.push(parseElement(child, idGenerator));
       }
     });
   }
-  
+
+  // Exit level after processing children
+  idGenerator.exitLevel();
+
   return {
     id,
     originalId,
@@ -84,7 +95,7 @@ function parseElement(element: HTMLElement): SVGElementNode {
     isText,
     isImage,
     textContent,
-    innerHTML
+    innerHTML,
   };
 }
 
@@ -92,7 +103,7 @@ export function findElementById(tree: SVGElementNode, id: string): SVGElementNod
   if (tree.id === id) {
     return tree;
   }
-  
+
   if (tree.children && tree.children.length > 0) {
     for (const child of tree.children) {
       const found = findElementById(child, id);
@@ -101,6 +112,6 @@ export function findElementById(tree: SVGElementNode, id: string): SVGElementNod
       }
     }
   }
-  
+
   return null;
 }
