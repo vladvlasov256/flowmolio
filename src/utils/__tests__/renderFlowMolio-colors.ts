@@ -24,28 +24,30 @@ describe('renderFlowMolio', () => {
         enabledRoles: {
           [ColorRole.FILL]: true,
           [ColorRole.STROKE]: false,
-          [ColorRole.STOP_COLOR]: false
-        }
+          [ColorRole.STOP_COLOR]: false,
+        },
       };
 
       const connection: Connection = {
         sourceNodeId: 'data1',
         sourceField: 'primaryColor',
-        targetNodeId: 'color1'
+        targetNodeId: 'color1',
       };
 
       const previewObject: PreviewObject = {
         svg: mockSvg,
         connections: [connection],
-        nodes: [colorNode]
+        nodes: [colorNode],
       };
 
       const dataSources = {
-        data1: { primaryColor: '#00ff00' }
+        data1: { primaryColor: '#00ff00' },
       };
 
       const result = renderFlowMolio(previewObject, dataSources);
-      expect(result).toEqual(`<svg width="100" height="100"><rect id="rect1" fill="#00ff00" stroke="#0000ff" /><circle id="circle1" fill="#00ff00" /><defs ><lineargradient ><stop stop-color="#ff0000" offset="0%" /></lineargradient></defs></svg>`);
+      expect(result).toEqual(
+        `<svg width="100" height="100"><rect id="rect1" fill="#00ff00" stroke="#0000ff" /><circle id="circle1" fill="#00ff00" /><defs ><lineargradient ><stop stop-color="#ff0000" offset="0%" /></lineargradient></defs></svg>`,
+      );
     });
 
     it('should apply color changes based on stroke role', () => {
@@ -56,28 +58,30 @@ describe('renderFlowMolio', () => {
         enabledRoles: {
           [ColorRole.FILL]: false,
           [ColorRole.STROKE]: true,
-          [ColorRole.STOP_COLOR]: false
-        }
+          [ColorRole.STOP_COLOR]: false,
+        },
       };
 
       const connection: Connection = {
         sourceNodeId: 'data1',
         sourceField: 'borderColor',
-        targetNodeId: 'color1'
+        targetNodeId: 'color1',
       };
 
       const previewObject: PreviewObject = {
         svg: mockSvg,
         connections: [connection],
-        nodes: [colorNode]
+        nodes: [colorNode],
       };
 
       const dataSources = {
-        data1: { borderColor: '#ff00ff' }
+        data1: { borderColor: '#ff00ff' },
       };
 
       const result = renderFlowMolio(previewObject, dataSources);
-      expect(result).toEqual(`<svg width="100" height="100"><rect id="rect1" fill="#ff0000" stroke="#ff00ff" /><circle id="circle1" fill="#ff0000" /><defs ><lineargradient ><stop stop-color="#ff0000" offset="0%" /></lineargradient></defs></svg>`);
+      expect(result).toEqual(
+        `<svg width="100" height="100"><rect id="rect1" fill="#ff0000" stroke="#ff00ff" /><circle id="circle1" fill="#ff0000" /><defs ><lineargradient ><stop stop-color="#ff0000" offset="0%" /></lineargradient></defs></svg>`,
+      );
     });
 
     it('should apply color changes based on stop-color role', () => {
@@ -88,28 +92,30 @@ describe('renderFlowMolio', () => {
         enabledRoles: {
           [ColorRole.FILL]: false,
           [ColorRole.STROKE]: false,
-          [ColorRole.STOP_COLOR]: true
-        }
+          [ColorRole.STOP_COLOR]: true,
+        },
       };
 
       const connection: Connection = {
         sourceNodeId: 'data1',
         sourceField: 'gradientColor',
-        targetNodeId: 'color1'
+        targetNodeId: 'color1',
       };
 
       const previewObject: PreviewObject = {
         svg: mockSvg,
         connections: [connection],
-        nodes: [colorNode]
+        nodes: [colorNode],
       };
 
       const dataSources = {
-        data1: { gradientColor: '#ffff00' }
+        data1: { gradientColor: '#ffff00' },
       };
 
       const result = renderFlowMolio(previewObject, dataSources);
-      expect(result).toEqual(`<svg width="100" height="100"><rect id="rect1" fill="#ff0000" stroke="#0000ff" /><circle id="circle1" fill="#ff0000" /><defs ><lineargradient ><stop stop-color="#ffff00" offset="0%" /></lineargradient></defs></svg>`);
+      expect(result).toEqual(
+        `<svg width="100" height="100"><rect id="rect1" fill="#ff0000" stroke="#0000ff" /><circle id="circle1" fill="#ff0000" /><defs ><lineargradient ><stop stop-color="#ffff00" offset="0%" /></lineargradient></defs></svg>`,
+      );
     });
 
     it('should handle multiple enabled color roles', () => {
@@ -120,28 +126,30 @@ describe('renderFlowMolio', () => {
         enabledRoles: {
           [ColorRole.FILL]: true,
           [ColorRole.STROKE]: false,
-          [ColorRole.STOP_COLOR]: true
-        }
+          [ColorRole.STOP_COLOR]: true,
+        },
       };
 
       const connection: Connection = {
         sourceNodeId: 'data1',
         sourceField: 'themeColor',
-        targetNodeId: 'color1'
+        targetNodeId: 'color1',
       };
 
       const previewObject: PreviewObject = {
         svg: mockSvg,
         connections: [connection],
-        nodes: [colorNode]
+        nodes: [colorNode],
       };
 
       const dataSources = {
-        data1: { themeColor: '#00ffff' }
+        data1: { themeColor: '#00ffff' },
       };
 
       const result = renderFlowMolio(previewObject, dataSources);
-      expect(result).toEqual(`<svg width="100" height="100"><rect id="rect1" fill="#00ffff" stroke="#0000ff" /><circle id="circle1" fill="#00ffff" /><defs ><lineargradient ><stop stop-color="#00ffff" offset="0%" /></lineargradient></defs></svg>`);
+      expect(result).toEqual(
+        `<svg width="100" height="100"><rect id="rect1" fill="#00ffff" stroke="#0000ff" /><circle id="circle1" fill="#00ffff" /><defs ><lineargradient ><stop stop-color="#00ffff" offset="0%" /></lineargradient></defs></svg>`,
+      );
     });
 
     it('should only replace colors that match the target color exactly', () => {
@@ -152,28 +160,30 @@ describe('renderFlowMolio', () => {
         enabledRoles: {
           [ColorRole.FILL]: true,
           [ColorRole.STROKE]: true,
-          [ColorRole.STOP_COLOR]: false
-        }
+          [ColorRole.STOP_COLOR]: false,
+        },
       };
 
       const connection: Connection = {
         sourceNodeId: 'data1',
         sourceField: 'newColor',
-        targetNodeId: 'color1'
+        targetNodeId: 'color1',
       };
 
       const previewObject: PreviewObject = {
         svg: mockSvg,
         connections: [connection],
-        nodes: [colorNode]
+        nodes: [colorNode],
       };
 
       const dataSources = {
-        data1: { newColor: '#purple' }
+        data1: { newColor: '#purple' },
       };
 
       const result = renderFlowMolio(previewObject, dataSources);
-      expect(result).toEqual(`<svg width="100" height="100"><rect id="rect1" fill="#purple" stroke="#0000ff" /><circle id="circle1" fill="#purple" /><defs ><lineargradient ><stop stop-color="#ff0000" offset="0%" /></lineargradient></defs></svg>`);
+      expect(result).toEqual(
+        `<svg width="100" height="100"><rect id="rect1" fill="#purple" stroke="#0000ff" /><circle id="circle1" fill="#purple" /><defs ><lineargradient ><stop stop-color="#ff0000" offset="0%" /></lineargradient></defs></svg>`,
+      );
     });
 
     it('should handle invalid color values gracefully', () => {
@@ -184,28 +194,30 @@ describe('renderFlowMolio', () => {
         enabledRoles: {
           [ColorRole.FILL]: true,
           [ColorRole.STROKE]: false,
-          [ColorRole.STOP_COLOR]: false
-        }
+          [ColorRole.STOP_COLOR]: false,
+        },
       };
 
       const connection: Connection = {
         sourceNodeId: 'data1',
         sourceField: 'invalidColor',
-        targetNodeId: 'color1'
+        targetNodeId: 'color1',
       };
 
       const previewObject: PreviewObject = {
         svg: mockSvg,
         connections: [connection],
-        nodes: [colorNode]
+        nodes: [colorNode],
       };
 
       const dataSources = {
-        data1: { invalidColor: null }
+        data1: { invalidColor: null },
       };
 
       const result = renderFlowMolio(previewObject, dataSources);
-      expect(result).toEqual(`<svg width="100" height="100"><rect id="rect1" fill="#ff0000" stroke="#0000ff" /><circle id="circle1" fill="#ff0000" /><defs ><lineargradient ><stop stop-color="#ff0000" offset="0%" /></lineargradient></defs></svg>`);
+      expect(result).toEqual(
+        `<svg width="100" height="100"><rect id="rect1" fill="#ff0000" stroke="#0000ff" /><circle id="circle1" fill="#ff0000" /><defs ><lineargradient ><stop stop-color="#ff0000" offset="0%" /></lineargradient></defs></svg>`,
+      );
     });
   });
 });

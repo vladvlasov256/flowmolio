@@ -7,9 +7,9 @@ describe('renderFlowMolio', () => {
       const previewObject: PreviewObject = {
         svg: '',
         connections: [],
-        nodes: []
+        nodes: [],
       };
-      
+
       const result = renderFlowMolio(previewObject, {});
       expect(result).toBe('<div>No SVG template provided</div>');
     });
@@ -18,9 +18,9 @@ describe('renderFlowMolio', () => {
       const previewObject: PreviewObject = {
         svg: '<svg></svg>',
         connections: [],
-        nodes: []
+        nodes: [],
       };
-      
+
       const result = renderFlowMolio(previewObject, {});
       expect(result).toEqual('<svg  />');
     });
@@ -29,9 +29,9 @@ describe('renderFlowMolio', () => {
       const previewObject: PreviewObject = {
         svg: 'invalid-svg',
         connections: [],
-        nodes: []
+        nodes: [],
       };
-      
+
       const result = renderFlowMolio(previewObject, {});
       expect(result).toContain('Rendering error:');
     });
@@ -60,79 +60,83 @@ describe('renderFlowMolio', () => {
           enabledRoles: {
             [ColorRole.FILL]: true,
             [ColorRole.STROKE]: false,
-            [ColorRole.STOP_COLOR]: false
-          }
-        }
+            [ColorRole.STOP_COLOR]: false,
+          },
+        },
       ];
 
       const connections: Connection[] = [
         { sourceNodeId: 'product', sourceField: 'name', targetNodeId: 'titleNode' },
         { sourceNodeId: 'product', sourceField: 'price', targetNodeId: 'priceNode' },
         { sourceNodeId: 'product', sourceField: 'image', targetNodeId: 'imgNode' },
-        { sourceNodeId: 'theme', sourceField: 'badgeColor', targetNodeId: 'colorNode' }
+        { sourceNodeId: 'theme', sourceField: 'badgeColor', targetNodeId: 'colorNode' },
       ];
 
       const previewObject: PreviewObject = {
         svg: complexSvg,
         connections,
-        nodes
+        nodes,
       };
 
       const dataSources = {
         product: {
           name: 'Awesome Product',
           price: '$29.99',
-          image: 'https://example.com/awesome.jpg'
+          image: 'https://example.com/awesome.jpg',
         },
         theme: {
-          badgeColor: '#00ff00'
-        }
+          badgeColor: '#00ff00',
+        },
       };
 
       const result = renderFlowMolio(previewObject, dataSources);
-      expect(result).toEqual(`<svg width="200" height="200"><rect id="bg" fill="#ffffff" stroke="#000000" /><text id="title">Awesome Product</text><text id="price">$29.99</text><image id="product-img" href="https://example.com/awesome.jpg" xlink:href="https://example.com/awesome.jpg" /><circle id="badge" fill="#00ff00" /></svg>`);
+      expect(result).toEqual(
+        `<svg width="200" height="200"><rect id="bg" fill="#ffffff" stroke="#000000" /><text id="title">Awesome Product</text><text id="price">$29.99</text><image id="product-img" href="https://example.com/awesome.jpg" xlink:href="https://example.com/awesome.jpg" /><circle id="badge" fill="#00ff00" /></svg>`,
+      );
     });
 
     it('should handle partial data gracefully', () => {
       const nodes: NodeData[] = [
         { id: 'titleNode', type: 'text', elementId: 'title' },
-        { id: 'priceNode', type: 'text', elementId: 'price' }
+        { id: 'priceNode', type: 'text', elementId: 'price' },
       ];
 
       const connections: Connection[] = [
         { sourceNodeId: 'product', sourceField: 'name', targetNodeId: 'titleNode' },
-        { sourceNodeId: 'product', sourceField: 'missing', targetNodeId: 'priceNode' }
+        { sourceNodeId: 'product', sourceField: 'missing', targetNodeId: 'priceNode' },
       ];
 
       const previewObject: PreviewObject = {
         svg: complexSvg,
         connections,
-        nodes
+        nodes,
       };
 
       const dataSources = {
         product: {
-          name: 'Partial Product'
-        }
+          name: 'Partial Product',
+        },
       };
 
       const result = renderFlowMolio(previewObject, dataSources);
-      expect(result).toEqual(`<svg width="200" height="200"><rect id="bg" fill="#ffffff" stroke="#000000" /><text id="title">Partial Product</text><text id="price">$0.00</text><image id="product-img" href="placeholder.jpg" /><circle id="badge" fill="#ff0000" /></svg>`);
+      expect(result).toEqual(
+        `<svg width="200" height="200"><rect id="bg" fill="#ffffff" stroke="#000000" /><text id="title">Partial Product</text><text id="price">$0.00</text><image id="product-img" href="placeholder.jpg" /><circle id="badge" fill="#ff0000" /></svg>`,
+      );
     });
 
     it('should handle connections without matching nodes', () => {
       const connections: Connection[] = [
-        { sourceNodeId: 'product', sourceField: 'name', targetNodeId: 'nonexistentNode' }
+        { sourceNodeId: 'product', sourceField: 'name', targetNodeId: 'nonexistentNode' },
       ];
 
       const previewObject: PreviewObject = {
         svg: complexSvg,
         connections,
-        nodes: []
+        nodes: [],
       };
 
       const dataSources = {
-        product: { name: 'Test Product' }
+        product: { name: 'Test Product' },
       };
 
       const result = renderFlowMolio(previewObject, dataSources);
@@ -141,21 +145,21 @@ describe('renderFlowMolio', () => {
 
     it('should handle nodes without matching elements', () => {
       const nodes: NodeData[] = [
-        { id: 'titleNode', type: 'text', elementId: 'nonexistentElement' }
+        { id: 'titleNode', type: 'text', elementId: 'nonexistentElement' },
       ];
 
       const connections: Connection[] = [
-        { sourceNodeId: 'product', sourceField: 'name', targetNodeId: 'titleNode' }
+        { sourceNodeId: 'product', sourceField: 'name', targetNodeId: 'titleNode' },
       ];
 
       const previewObject: PreviewObject = {
         svg: complexSvg,
         connections,
-        nodes
+        nodes,
       };
 
       const dataSources = {
-        product: { name: 'Test Product' }
+        product: { name: 'Test Product' },
       };
 
       const result = renderFlowMolio(previewObject, dataSources);
@@ -168,7 +172,7 @@ describe('renderFlowMolio', () => {
       const previewObject: PreviewObject = {
         svg: '<svg><text id="test">Test</text></svg>',
         connections: [],
-        nodes: []
+        nodes: [],
       };
 
       const result = renderFlowMolio(previewObject, {});
@@ -179,7 +183,7 @@ describe('renderFlowMolio', () => {
       const previewObject: PreviewObject = {
         svg: '<svg><text id="test">Test</text></svg>',
         connections: [],
-        nodes: []
+        nodes: [],
       };
 
       const result = renderFlowMolio(previewObject, null);
@@ -190,7 +194,7 @@ describe('renderFlowMolio', () => {
       const previewObject: PreviewObject = {
         svg: '<svg><text id="test">Test</text></svg>',
         connections: [],
-        nodes: []
+        nodes: [],
       };
 
       // Remove nodes property to test undefined handling

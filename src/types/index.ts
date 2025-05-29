@@ -2,7 +2,7 @@
 export enum ColorRole {
   FILL = 'fill',
   STROKE = 'stroke',
-  STOP_COLOR = 'stop-color'
+  STOP_COLOR = 'stop-color',
 }
 /* eslint-enable no-unused-vars */
 

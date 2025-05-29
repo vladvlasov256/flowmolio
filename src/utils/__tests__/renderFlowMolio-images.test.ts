@@ -1,4 +1,4 @@
-import { PreviewObject, Connection, NodeData, ColorRole } from '../../types';
+import { PreviewObject, Connection, NodeData } from '../../types';
 import { renderFlowMolio } from '../renderFlowMolio';
 
 describe('renderFlowMolio - Images', () => {
@@ -13,27 +13,29 @@ describe('renderFlowMolio - Images', () => {
       const imageNode: NodeData = {
         id: 'node1',
         type: 'image',
-        elementId: 'img1'
+        elementId: 'img1',
       };
 
       const connection: Connection = {
         sourceNodeId: 'data1',
         sourceField: 'imageUrl',
-        targetNodeId: 'node1'
+        targetNodeId: 'node1',
       };
 
       const previewObject: PreviewObject = {
         svg: mockSvg,
         connections: [connection],
-        nodes: [imageNode]
+        nodes: [imageNode],
       };
 
       const dataSources = {
-        data1: { imageUrl: 'https://example.com/new-image.jpg' }
+        data1: { imageUrl: 'https://example.com/new-image.jpg' },
       };
 
       const result = renderFlowMolio(previewObject, dataSources);
-      expect(result).toEqual(`<svg width="100" height="100"><image id="img1" href="https://example.com/new-image.jpg" xlink:href="https://example.com/new-image.jpg" /></svg>`);
+      expect(result).toEqual(
+        `<svg width="100" height="100"><image id="img1" href="https://example.com/new-image.jpg" xlink:href="https://example.com/new-image.jpg" /></svg>`,
+      );
     });
   });
 });

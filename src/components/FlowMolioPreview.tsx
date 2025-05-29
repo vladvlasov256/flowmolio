@@ -9,19 +9,23 @@ interface FlowMolioPreviewProps extends React.SVGProps<SVGSVGElement> {
   dataSources: any;
 }
 
-export const FlowMolioPreview: React.FC<FlowMolioPreviewProps> = ({ previewObject, dataSources, ...svgProps }) => {
+export const FlowMolioPreview: React.FC<FlowMolioPreviewProps> = ({
+  previewObject,
+  dataSources,
+  ...svgProps
+}) => {
   const renderedSvg = useMemo(() => {
     if (previewObject && dataSources) {
       return renderFlowMolio(previewObject, dataSources);
     }
-    return ""
+    return '';
   }, [previewObject, dataSources]);
 
   const svg = useMemo(() => {
     if (!renderedSvg) {
       return null;
     }
-    const parsedSVG = parse(renderedSvg)
+    const parsedSVG = parse(renderedSvg);
     const svgElement = parsedSVG.querySelector('svg');
     if (!svgElement) {
       return null;
@@ -42,5 +46,5 @@ export const FlowMolioPreview: React.FC<FlowMolioPreviewProps> = ({ previewObjec
     return null;
   }
 
-  return <svg dangerouslySetInnerHTML={{__html: svg.innerHTML}} {...svg.props} {...svgProps} />;
+  return <svg dangerouslySetInnerHTML={{ __html: svg.innerHTML }} {...svg.props} {...svgProps} />;
 };
