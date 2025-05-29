@@ -61,7 +61,7 @@ export class IdGenerator {
     let suffix = 1;
 
     while (this.existingIds.has(finalId)) {
-      finalId = `${baseId}-${suffix}`;
+      finalId = `${baseId}:${suffix}`;
       suffix++;
     }
 
