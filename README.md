@@ -67,5 +67,5 @@ const product = {
 // FlowMolio blueprint
 const flowmolio = {} 
 
-<FlowMolioPreview dataSources={{"data-source-1": product}} previewObject={flowmolio} />
+<FlowMolioPreview dataSources={{"data-source-1": product}} blueprint={flowmolio} />
 ```

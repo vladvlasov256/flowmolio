@@ -1,38 +1,38 @@
-import { PreviewObject, Connection, NodeData, ColorRole } from '../../types';
+import { Blueprint, Connection, NodeData, ColorRole } from '../../types';
 import { renderFlowMolio } from '../renderFlowMolio';
 
 describe('renderFlowMolio', () => {
   describe('Basic functionality', () => {
     it('should return error message when no SVG template provided', () => {
-      const previewObject: PreviewObject = {
+      const blueprint: Blueprint = {
         svg: '',
         connections: [],
         nodes: [],
       };
 
-      const result = renderFlowMolio(previewObject, {});
+      const result = renderFlowMolio(blueprint, {});
       expect(result).toBe('<div>No SVG template provided</div>');
     });
 
     it('should handle empty preview object gracefully', () => {
-      const previewObject: PreviewObject = {
+      const blueprint: Blueprint = {
         svg: '<svg></svg>',
         connections: [],
         nodes: [],
       };
 
-      const result = renderFlowMolio(previewObject, {});
+      const result = renderFlowMolio(blueprint, {});
       expect(result).toEqual('<svg  />');
     });
 
     it('should return error message when SVG parsing fails', () => {
-      const previewObject: PreviewObject = {
+      const blueprint: Blueprint = {
         svg: 'invalid-svg',
         connections: [],
         nodes: [],
       };
 
-      const result = renderFlowMolio(previewObject, {});
+      const result = renderFlowMolio(blueprint, {});
       expect(result).toContain('Rendering error:');
     });
   });
@@ -72,7 +72,7 @@ describe('renderFlowMolio', () => {
         { sourceNodeId: 'theme', sourceField: 'badgeColor', targetNodeId: 'colorNode' },
       ];
 
-      const previewObject: PreviewObject = {
+      const blueprint: Blueprint = {
         svg: complexSvg,
         connections,
         nodes,
@@ -89,7 +89,7 @@ describe('renderFlowMolio', () => {
         },
       };
 
-      const result = renderFlowMolio(previewObject, dataSources);
+      const result = renderFlowMolio(blueprint, dataSources);
       expect(result).toEqual(
         `<svg width="200" height="200"><rect id="bg" fill="#ffffff" stroke="#000000" /><text id="title">Awesome Product</text><text id="price">$29.99</text><image id="product-img" href="https://example.com/awesome.jpg" xlink:href="https://example.com/awesome.jpg" /><circle id="badge" fill="#00ff00" /></svg>`,
       );
@@ -106,7 +106,7 @@ describe('renderFlowMolio', () => {
         { sourceNodeId: 'product', sourceField: 'missing', targetNodeId: 'priceNode' },
       ];
 
-      const previewObject: PreviewObject = {
+      const blueprint: Blueprint = {
         svg: complexSvg,
         connections,
         nodes,
@@ -118,7 +118,7 @@ describe('renderFlowMolio', () => {
         },
       };
 
-      const result = renderFlowMolio(previewObject, dataSources);
+      const result = renderFlowMolio(blueprint, dataSources);
       expect(result).toEqual(
         `<svg width="200" height="200"><rect id="bg" fill="#ffffff" stroke="#000000" /><text id="title">Partial Product</text><text id="price">$0.00</text><image id="product-img" href="placeholder.jpg" /><circle id="badge" fill="#ff0000" /></svg>`,
       );
@@ -129,7 +129,7 @@ describe('renderFlowMolio', () => {
         { sourceNodeId: 'product', sourceField: 'name', targetNodeId: 'nonexistentNode' },
       ];
 
-      const previewObject: PreviewObject = {
+      const blueprint: Blueprint = {
         svg: complexSvg,
         connections,
         nodes: [],
@@ -139,7 +139,7 @@ describe('renderFlowMolio', () => {
         product: { name: 'Test Product' },
       };
 
-      const result = renderFlowMolio(previewObject, dataSources);
+      const result = renderFlowMolio(blueprint, dataSources);
       expect(result).toContain('Product Title'); // Original text should remain
     });
 
@@ -152,7 +152,7 @@ describe('renderFlowMolio', () => {
         { sourceNodeId: 'product', sourceField: 'name', targetNodeId: 'titleNode' },
       ];
 
-      const previewObject: PreviewObject = {
+      const blueprint: Blueprint = {
         svg: complexSvg,
         connections,
         nodes,
@@ -162,46 +162,46 @@ describe('renderFlowMolio', () => {
         product: { name: 'Test Product' },
       };
 
-      const result = renderFlowMolio(previewObject, dataSources);
+      const result = renderFlowMolio(blueprint, dataSources);
       expect(result).toContain('Product Title'); // Original text should remain
     });
   });
 
   describe('Edge cases', () => {
     it('should handle empty data sources', () => {
-      const previewObject: PreviewObject = {
+      const blueprint: Blueprint = {
         svg: '<svg><text id="test">Test</text></svg>',
         connections: [],
         nodes: [],
       };
 
-      const result = renderFlowMolio(previewObject, {});
+      const result = renderFlowMolio(blueprint, {});
       expect(result).toContain('Test');
     });
 
     it('should handle null data sources', () => {
-      const previewObject: PreviewObject = {
+      const blueprint: Blueprint = {
         svg: '<svg><text id="test">Test</text></svg>',
         connections: [],
         nodes: [],
       };
 
-      const result = renderFlowMolio(previewObject, null);
+      const result = renderFlowMolio(blueprint, null);
       expect(result).toContain('Test');
     });
 
     it('should handle undefined preview object properties', () => {
-      const previewObject: PreviewObject = {
+      const blueprint: Blueprint = {
         svg: '<svg><text id="test">Test</text></svg>',
         connections: [],
         nodes: [],
       };
 
       // Remove nodes property to test undefined handling
-      const partialPreview: Partial<PreviewObject> = { ...previewObject };
-      delete partialPreview.nodes;
+      const partialBlueprint: Partial<Blueprint> = { ...blueprint };
+      delete partialBlueprint.nodes;
 
-      const result = renderFlowMolio(partialPreview as PreviewObject, {});
+      const result = renderFlowMolio(partialBlueprint as Blueprint, {});
       expect(result).toContain('Test');
     });
   });

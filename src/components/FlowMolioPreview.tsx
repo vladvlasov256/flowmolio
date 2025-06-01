@@ -1,25 +1,25 @@
 import parse from 'node-html-parser';
 import React, { useMemo } from 'react';
 
-import { PreviewObject } from '../types';
+import { Blueprint } from '../types';
 import { renderFlowMolio } from '../utils/renderFlowMolio';
 
 interface FlowMolioPreviewProps extends React.SVGProps<SVGSVGElement> {
-  previewObject: PreviewObject;
+  blueprint: Blueprint;
   dataSources: any;
 }
 
 export const FlowMolioPreview: React.FC<FlowMolioPreviewProps> = ({
-  previewObject,
+  blueprint,
   dataSources,
   ...svgProps
 }) => {
   const renderedSvg = useMemo(() => {
-    if (previewObject && dataSources) {
-      return renderFlowMolio(previewObject, dataSources);
+    if (blueprint && dataSources) {
+      return renderFlowMolio(blueprint, dataSources);
     }
     return '';
-  }, [previewObject, dataSources]);
+  }, [blueprint, dataSources]);
 
   const svg = useMemo(() => {
     if (!renderedSvg) {

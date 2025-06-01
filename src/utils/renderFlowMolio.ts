@@ -1,4 +1,4 @@
-import { Connection, PreviewObject, NodeData, ColorNodeData, ColorRole } from '../types';
+import { Connection, Blueprint, NodeData, ColorNodeData, ColorRole } from '../types';
 
 import { applyDataBindings, serializeSVG } from './renderUtils';
 import { parseSVG } from './svgUtils';
@@ -113,31 +113,31 @@ function getValueFromDataSource(dataSources: any, connection: Connection): any {
  * Renders an SVG with data bindings and color node processing
  * This is a pure rendering function without any hover/inspection functionality
  */
-export function renderFlowMolio(previewObject: PreviewObject, dataSources: any): string {
-  if (!previewObject.svg) {
+export function renderFlowMolio(blueprint: Blueprint, dataSources: any): string {
+  if (!blueprint.svg) {
     return '<div>No SVG template provided</div>';
   }
 
   try {
     // Parse the SVG
-    const svgTree = parseSVG(previewObject.svg);
+    const svgTree = parseSVG(blueprint.svg);
 
     // Apply data bindings
     applyDataBindings({
       svgTree,
-      connections: previewObject.connections,
+      connections: blueprint.connections,
       dataSources,
-      nodes: previewObject.nodes || [],
+      nodes: blueprint.nodes || [],
     });
 
     // Apply color node changes if there are nodes and connections
     if (
-      previewObject.nodes &&
-      previewObject.nodes.length > 0 &&
-      previewObject.connections &&
-      previewObject.connections.length > 0
+      blueprint.nodes &&
+      blueprint.nodes.length > 0 &&
+      blueprint.connections &&
+      blueprint.connections.length > 0
     ) {
-      applyColorNodes(svgTree, previewObject.nodes, previewObject.connections, dataSources);
+      applyColorNodes(svgTree, blueprint.nodes, blueprint.connections, dataSources);
     }
 
     // Serialize the modified SVG back to string

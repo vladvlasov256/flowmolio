@@ -1,4 +1,4 @@
-import { PreviewObject, Connection, NodeData } from '../../types';
+import { Blueprint, Connection, NodeData } from '../../types';
 import { renderFlowMolio } from '../renderFlowMolio';
 
 describe('renderFlowMolio - Texts', () => {
@@ -23,7 +23,7 @@ describe('renderFlowMolio - Texts', () => {
         targetNodeId: 'node1',
       };
 
-      const previewObject: PreviewObject = {
+      const blueprint: Blueprint = {
         svg: mockSvg,
         connections: [connection],
         nodes: [textNode],
@@ -33,7 +33,7 @@ describe('renderFlowMolio - Texts', () => {
         data1: { title: 'New Text' },
       };
 
-      const result = renderFlowMolio(previewObject, dataSources);
+      const result = renderFlowMolio(blueprint, dataSources);
       expect(result).toEqual(
         `<svg width="100" height="100"><text id="text1"><tspan x="0" y="0">New Text</tspan></text><text id="text2"><tspan x="0" y="0">Another Text</tspan></text></svg>`,
       );
@@ -52,7 +52,7 @@ describe('renderFlowMolio - Texts', () => {
         targetNodeId: 'node1',
       };
 
-      const previewObject: PreviewObject = {
+      const blueprint: Blueprint = {
         svg: mockSvg,
         connections: [connection],
         nodes: [textNode],
@@ -66,7 +66,7 @@ describe('renderFlowMolio - Texts', () => {
         },
       };
 
-      const result = renderFlowMolio(previewObject, dataSources);
+      const result = renderFlowMolio(blueprint, dataSources);
       expect(result).toEqual(
         `<svg width="100" height="100"><text id="text1"><tspan x="0" y="0">Nested Product Name</tspan></text><text id="text2"><tspan x="0" y="0">Another Text</tspan></text></svg>`,
       );
@@ -85,7 +85,7 @@ describe('renderFlowMolio - Texts', () => {
         targetNodeId: 'node1',
       };
 
-      const previewObject: PreviewObject = {
+      const blueprint: Blueprint = {
         svg: mockSvg,
         connections: [connection],
         nodes: [textNode],
@@ -93,7 +93,7 @@ describe('renderFlowMolio - Texts', () => {
 
       const dataSources = {};
 
-      const result = renderFlowMolio(previewObject, dataSources);
+      const result = renderFlowMolio(blueprint, dataSources);
       expect(result).toEqual(
         `<svg width="100" height="100"><text id="text1"><tspan x="0" y="0">Original Text</tspan></text><text id="text2"><tspan x="0" y="0">Another Text</tspan></text></svg>`,
       );
@@ -112,7 +112,7 @@ describe('renderFlowMolio - Texts', () => {
         targetNodeId: 'node1',
       };
 
-      const previewObject: PreviewObject = {
+      const blueprint: Blueprint = {
         svg: mockSvg,
         connections: [connection],
         nodes: [textNode],
@@ -122,7 +122,7 @@ describe('renderFlowMolio - Texts', () => {
         data1: { title: 'Available Title' },
       };
 
-      const result = renderFlowMolio(previewObject, dataSources);
+      const result = renderFlowMolio(blueprint, dataSources);
       expect(result).toEqual(
         `<svg width="100" height="100"><text id="text1"><tspan x="0" y="0">Original Text</tspan></text><text id="text2"><tspan x="0" y="0">Another Text</tspan></text></svg>`,
       );
@@ -161,7 +161,7 @@ describe('renderFlowMolio - Texts', () => {
       </svg>
     `;
 
-    const previewObject: PreviewObject = {
+    const blueprint: Blueprint = {
       svg: sampleSvg,
       connections: [connection0, connection1],
       nodes: [textNode0, textNode1],
@@ -171,7 +171,7 @@ describe('renderFlowMolio - Texts', () => {
       data1: { firstText: 'First', secondText: 'Second' },
     };
 
-    const result = renderFlowMolio(previewObject, dataSources);
+    const result = renderFlowMolio(blueprint, dataSources);
     expect(result).toEqual(
       `<svg width="100" height="100"><text ><tspan x="0" y="0">First</tspan></text><text ><tspan x="0" y="0">Second</tspan></text></svg>`,
     );

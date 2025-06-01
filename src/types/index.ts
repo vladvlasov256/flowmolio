@@ -54,8 +54,8 @@ export interface ColorNodeData extends BaseNodeData {
 // Union type for all node types
 export type NodeData = TextNodeData | ImageNodeData | ColorNodeData;
 
-// Preview object containing SVG, connections, and nodes
-export interface PreviewObject {
+// Blueprint containing SVG, connections, and nodes
+export interface Blueprint {
   svg: string;
   connections: Connection[];
   nodes: NodeData[];
