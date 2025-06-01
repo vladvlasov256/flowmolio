@@ -1,4 +1,4 @@
-import { Blueprint, Connection, NodeData } from '../../types';
+import { Blueprint, Connection, NodeData, DataSources } from '../../types';
 import { renderFlowMolio } from '../renderFlowMolio';
 
 describe('renderFlowMolio - Texts', () => {
@@ -29,7 +29,7 @@ describe('renderFlowMolio - Texts', () => {
         nodes: [textNode],
       };
 
-      const dataSources = {
+      const dataSources: DataSources = {
         data1: { title: 'New Text' },
       };
 
@@ -58,7 +58,7 @@ describe('renderFlowMolio - Texts', () => {
         nodes: [textNode],
       };
 
-      const dataSources = {
+      const dataSources: DataSources = {
         data1: {
           product: {
             name: 'Nested Product Name',
@@ -91,7 +91,7 @@ describe('renderFlowMolio - Texts', () => {
         nodes: [textNode],
       };
 
-      const dataSources = {};
+      const dataSources: DataSources = {};
 
       const result = renderFlowMolio(blueprint, dataSources);
       expect(result).toEqual(
@@ -118,7 +118,7 @@ describe('renderFlowMolio - Texts', () => {
         nodes: [textNode],
       };
 
-      const dataSources = {
+      const dataSources: DataSources = {
         data1: { title: 'Available Title' },
       };
 
@@ -167,7 +167,7 @@ describe('renderFlowMolio - Texts', () => {
       nodes: [textNode0, textNode1],
     };
 
-    const dataSources = {
+    const dataSources: DataSources = {
       data1: { firstText: 'First', secondText: 'Second' },
     };
 

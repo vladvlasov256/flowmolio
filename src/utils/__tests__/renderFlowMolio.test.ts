@@ -1,4 +1,4 @@
-import { Blueprint, Connection, NodeData, ColorRole } from '../../types';
+import { Blueprint, Connection, NodeData, ColorRole, DataSources } from '../../types';
 import { renderFlowMolio } from '../renderFlowMolio';
 
 describe('renderFlowMolio', () => {
@@ -78,7 +78,7 @@ describe('renderFlowMolio', () => {
         nodes,
       };
 
-      const dataSources = {
+      const dataSources: DataSources = {
         product: {
           name: 'Awesome Product',
           price: '$29.99',
@@ -112,7 +112,7 @@ describe('renderFlowMolio', () => {
         nodes,
       };
 
-      const dataSources = {
+      const dataSources: DataSources = {
         product: {
           name: 'Partial Product',
         },
@@ -135,7 +135,7 @@ describe('renderFlowMolio', () => {
         nodes: [],
       };
 
-      const dataSources = {
+      const dataSources: DataSources = {
         product: { name: 'Test Product' },
       };
 
@@ -158,7 +158,7 @@ describe('renderFlowMolio', () => {
         nodes,
       };
 
-      const dataSources = {
+      const dataSources: DataSources = {
         product: { name: 'Test Product' },
       };
 
@@ -186,7 +186,7 @@ describe('renderFlowMolio', () => {
         nodes: [],
       };
 
-      const result = renderFlowMolio(blueprint, null);
+      const result = renderFlowMolio(blueprint, {} as DataSources);
       expect(result).toContain('Test');
     });
 

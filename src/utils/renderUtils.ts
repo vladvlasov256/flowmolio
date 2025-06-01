@@ -1,25 +1,24 @@
 import { HTMLElement } from 'node-html-parser';
 
-import { DataBindingContext } from '../types';
-import { SVGElementNode } from '../types';
+import { DataBindingContext, SVGElementNode, JSONValue } from '../types';
 
 import { findElementById } from './svgUtils';
 
 /**
  * Extracts a value from a nested object using a dot-notation path
  */
-function getValueFromPath(obj: any, path: string): any {
+function getValueFromPath(obj: JSONValue, path: string): JSONValue | undefined {
   if (!path) return undefined;
 
   const parts = path.split('.');
-  let current = obj;
+  let current: JSONValue | undefined = obj;
 
   for (const part of parts) {
     if (current === null || current === undefined) {
       return undefined;
     }
 
-    current = current[part];
+    current = (current as Record<string, JSONValue>)[part];
   }
 
   return current;

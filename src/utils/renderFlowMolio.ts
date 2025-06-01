@@ -1,4 +1,13 @@
-import { Connection, Blueprint, NodeData, ColorNodeData, ColorRole } from '../types';
+import {
+  Connection,
+  Blueprint,
+  NodeData,
+  ColorNodeData,
+  ColorRole,
+  DataSources,
+  SVGElementNode,
+  JSONValue,
+} from '../types';
 
 import { applyDataBindings, serializeSVG } from './renderUtils';
 import { parseSVG } from './svgUtils';
@@ -7,10 +16,10 @@ import { parseSVG } from './svgUtils';
  * Processes color nodes to apply color changes to SVG elements based on connections
  */
 function applyColorNodes(
-  svgTree: any,
+  svgTree: SVGElementNode,
   nodes: NodeData[],
   connections: Connection[],
-  dataSources: any,
+  dataSources: DataSources,
 ): void {
   // Find connections to color nodes
   const colorNodeConnections = connections.filter(conn => {
@@ -39,10 +48,11 @@ function applyColorNodes(
     if (!targetColor) return;
 
     // Get all elements in the SVG tree
-    const applyColorToElements = (element: any) => {
+    const applyColorToElements = (element: SVGElementNode) => {
       // If elementIds is specified and not empty, only apply to those specific elements
-      const shouldApplyToElement = !colorNode.elementIds || 
-        colorNode.elementIds.length === 0 || 
+      const shouldApplyToElement =
+        !colorNode.elementIds ||
+        colorNode.elementIds.length === 0 ||
         (element.id && colorNode.elementIds.includes(element.id));
 
       if (shouldApplyToElement) {
@@ -87,7 +97,7 @@ function applyColorNodes(
 /**
  * Helper to extract a value from a data source using a connection
  */
-function getValueFromDataSource(dataSources: any, connection: Connection): any {
+function getValueFromDataSource(dataSources: DataSources, connection: Connection): JSONValue {
   if (!dataSources || !connection.sourceNodeId || !connection.sourceField) {
     return null;
   }
@@ -97,13 +107,14 @@ function getValueFromDataSource(dataSources: any, connection: Connection): any {
 
   // Handle dot notation paths
   const path = connection.sourceField.split('.');
-  let value = dataSource;
+  let value: JSONValue = dataSource;
 
   for (const part of path) {
     if (value === null || value === undefined || typeof value !== 'object') {
       return null;
     }
-    value = value[part];
+    const record = value as Record<string, JSONValue>;
+    value = record[part];
   }
 
   return value;
@@ -113,7 +124,7 @@ function getValueFromDataSource(dataSources: any, connection: Connection): any {
  * Renders an SVG with data bindings and color node processing
  * This is a pure rendering function without any hover/inspection functionality
  */
-export function renderFlowMolio(blueprint: Blueprint, dataSources: any): string {
+export function renderFlowMolio(blueprint: Blueprint, dataSources: DataSources): string {
   if (!blueprint.svg) {
     return '<div>No SVG template provided</div>';
   }

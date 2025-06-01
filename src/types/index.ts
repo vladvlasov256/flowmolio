@@ -54,6 +54,18 @@ export interface ColorNodeData extends BaseNodeData {
 // Union type for all node types
 export type NodeData = TextNodeData | ImageNodeData | ColorNodeData;
 
+// JSON value type representing any valid JSON value
+export type JSONValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JSONValue[]
+  | { [key: string]: JSONValue };
+
+// Data sources type - a record of data source IDs to JSON objects
+export type DataSources = Record<string, JSONValue>;
+
 // Blueprint containing SVG, connections, and nodes
 export interface Blueprint {
   svg: string;
@@ -65,6 +77,6 @@ export interface Blueprint {
 export interface DataBindingContext {
   svgTree: SVGElementNode;
   connections: Connection[];
-  dataSources: any;
+  dataSources: DataSources;
   nodes?: NodeData[];
 }

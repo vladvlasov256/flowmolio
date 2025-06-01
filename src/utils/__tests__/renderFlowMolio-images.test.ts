@@ -1,4 +1,4 @@
-import { Blueprint, Connection, NodeData } from '../../types';
+import { Blueprint, Connection, NodeData, DataSources } from '../../types';
 import { renderFlowMolio } from '../renderFlowMolio';
 
 describe('renderFlowMolio - Images', () => {
@@ -28,7 +28,7 @@ describe('renderFlowMolio - Images', () => {
         nodes: [imageNode],
       };
 
-      const dataSources = {
+      const dataSources: DataSources = {
         data1: { imageUrl: 'https://example.com/new-image.jpg' },
       };
 

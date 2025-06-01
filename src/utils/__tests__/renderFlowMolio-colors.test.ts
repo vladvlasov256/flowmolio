@@ -1,4 +1,4 @@
-import { Blueprint, Connection, NodeData, ColorRole } from '../../types';
+import { Blueprint, Connection, NodeData, ColorRole, DataSources } from '../../types';
 import { renderFlowMolio } from '../renderFlowMolio';
 
 describe('renderFlowMolio', () => {
@@ -40,7 +40,7 @@ describe('renderFlowMolio', () => {
         nodes: [colorNode],
       };
 
-      const dataSources = {
+      const dataSources: DataSources = {
         data1: { primaryColor: '#00ff00' },
       };
 
@@ -74,7 +74,7 @@ describe('renderFlowMolio', () => {
         nodes: [colorNode],
       };
 
-      const dataSources = {
+      const dataSources: DataSources = {
         data1: { borderColor: '#ff00ff' },
       };
 
@@ -108,7 +108,7 @@ describe('renderFlowMolio', () => {
         nodes: [colorNode],
       };
 
-      const dataSources = {
+      const dataSources: DataSources = {
         data1: { gradientColor: '#ffff00' },
       };
 
@@ -142,7 +142,7 @@ describe('renderFlowMolio', () => {
         nodes: [colorNode],
       };
 
-      const dataSources = {
+      const dataSources: DataSources = {
         data1: { themeColor: '#00ffff' },
       };
 
@@ -176,7 +176,7 @@ describe('renderFlowMolio', () => {
         nodes: [colorNode],
       };
 
-      const dataSources = {
+      const dataSources: DataSources = {
         data1: { newColor: '#purple' },
       };
 
@@ -210,7 +210,7 @@ describe('renderFlowMolio', () => {
         nodes: [colorNode],
       };
 
-      const dataSources = {
+      const dataSources: DataSources = {
         data1: { invalidColor: null },
       };
 
@@ -245,7 +245,7 @@ describe('renderFlowMolio', () => {
         nodes: [colorNode],
       };
 
-      const dataSources = {
+      const dataSources: DataSources = {
         data1: { newColor: '#00ff00' },
       };
 
@@ -280,7 +280,7 @@ describe('renderFlowMolio', () => {
         nodes: [colorNode],
       };
 
-      const dataSources = {
+      const dataSources: DataSources = {
         data1: { newColor: '#00ff00' },
       };
 
@@ -315,7 +315,7 @@ describe('renderFlowMolio', () => {
         nodes: [colorNode],
       };
 
-      const dataSources = {
+      const dataSources: DataSources = {
         data1: { newColor: '#00ff00' },
       };
 
@@ -358,7 +358,7 @@ describe('renderFlowMolio', () => {
         nodes: [colorNode],
       };
 
-      const dataSources = {
+      const dataSources: DataSources = {
         data1: { newColor: '#00ff00' },
       };
 
@@ -393,7 +393,7 @@ describe('renderFlowMolio', () => {
         nodes: [colorNode],
       };
 
-      const dataSources = {
+      const dataSources: DataSources = {
         data1: { strokeColor: '#ff00ff' },
       };
 
