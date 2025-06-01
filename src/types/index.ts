@@ -80,3 +80,38 @@ export interface DataBindingContext {
   dataSources: DataSources;
   components?: Component[];
 }
+
+// Generic node structure (matches React Flow Node structure)
+export interface BlueprintNode {
+  id: string;
+  type?: string;
+  position: {
+    x: number;
+    y: number;
+  };
+  data: any;
+  [key: string]: any; // Allow additional properties
+}
+
+// Generic edge structure (matches React Flow Edge structure)
+export interface BlueprintEdge {
+  id: string;
+  source: string;
+  target: string;
+  sourceHandle?: string | null;
+  targetHandle?: string | null;
+  data?: any;
+  [key: string]: any; // Allow additional properties
+}
+
+// Blueprint represents the exported project from FlowMolio Studio
+export interface Blueprint {
+  // SVG markup string
+  svg: string;
+  
+  // Nodes (contains all node types including UI-specific data)
+  nodes: BlueprintNode[];
+  
+  // Edges (contains connection information)
+  edges: BlueprintEdge[];
+}
