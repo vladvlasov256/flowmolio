@@ -66,8 +66,8 @@ export type JSONValue =
 // Data sources type - a record of data source IDs to JSON objects
 export type DataSources = Record<string, JSONValue>;
 
-// Blueprint containing SVG, connections, and components
-export interface Blueprint {
+// Layout containing SVG, connections, and components
+export interface Layout {
   svg: string;
   connections: Connection[];
   components: Component[];

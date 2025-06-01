@@ -1,4 +1,4 @@
-import { Blueprint, Connection, Component, ColorRole, DataSources } from '../../types';
+import { Layout, Connection, Component, ColorRole, DataSources } from '../../types';
 import { renderFlowMolio } from '../renderFlowMolio';
 
 describe('renderFlowMolio', () => {
@@ -34,7 +34,7 @@ describe('renderFlowMolio', () => {
         targetNodeId: 'color1',
       };
 
-      const blueprint: Blueprint = {
+      const layout: Layout = {
         svg: mockSvg,
         connections: [connection],
         components: [colorComponent],
@@ -44,7 +44,7 @@ describe('renderFlowMolio', () => {
         data1: { primaryColor: '#00ff00' },
       };
 
-      const result = renderFlowMolio(blueprint, dataSources);
+      const result = renderFlowMolio(layout, dataSources);
       expect(result).toEqual(
         `<svg width="100" height="100"><rect id="rect1" fill="#00ff00" stroke="#0000ff" /><circle id="circle1" fill="#00ff00" /><defs ><lineargradient ><stop stop-color="#ff0000" offset="0%" /></lineargradient></defs></svg>`,
       );
@@ -68,7 +68,7 @@ describe('renderFlowMolio', () => {
         targetNodeId: 'color1',
       };
 
-      const blueprint: Blueprint = {
+      const layout: Layout = {
         svg: mockSvg,
         connections: [connection],
         components: [colorComponent],
@@ -78,7 +78,7 @@ describe('renderFlowMolio', () => {
         data1: { borderColor: '#ff00ff' },
       };
 
-      const result = renderFlowMolio(blueprint, dataSources);
+      const result = renderFlowMolio(layout, dataSources);
       expect(result).toEqual(
         `<svg width="100" height="100"><rect id="rect1" fill="#ff0000" stroke="#ff00ff" /><circle id="circle1" fill="#ff0000" /><defs ><lineargradient ><stop stop-color="#ff0000" offset="0%" /></lineargradient></defs></svg>`,
       );
@@ -102,7 +102,7 @@ describe('renderFlowMolio', () => {
         targetNodeId: 'color1',
       };
 
-      const blueprint: Blueprint = {
+      const layout: Layout = {
         svg: mockSvg,
         connections: [connection],
         components: [colorComponent],
@@ -112,7 +112,7 @@ describe('renderFlowMolio', () => {
         data1: { gradientColor: '#ffff00' },
       };
 
-      const result = renderFlowMolio(blueprint, dataSources);
+      const result = renderFlowMolio(layout, dataSources);
       expect(result).toEqual(
         `<svg width="100" height="100"><rect id="rect1" fill="#ff0000" stroke="#0000ff" /><circle id="circle1" fill="#ff0000" /><defs ><lineargradient ><stop stop-color="#ffff00" offset="0%" /></lineargradient></defs></svg>`,
       );
@@ -136,7 +136,7 @@ describe('renderFlowMolio', () => {
         targetNodeId: 'color1',
       };
 
-      const blueprint: Blueprint = {
+      const layout: Layout = {
         svg: mockSvg,
         connections: [connection],
         components: [colorComponent],
@@ -146,7 +146,7 @@ describe('renderFlowMolio', () => {
         data1: { themeColor: '#00ffff' },
       };
 
-      const result = renderFlowMolio(blueprint, dataSources);
+      const result = renderFlowMolio(layout, dataSources);
       expect(result).toEqual(
         `<svg width="100" height="100"><rect id="rect1" fill="#00ffff" stroke="#0000ff" /><circle id="circle1" fill="#00ffff" /><defs ><lineargradient ><stop stop-color="#00ffff" offset="0%" /></lineargradient></defs></svg>`,
       );
@@ -170,7 +170,7 @@ describe('renderFlowMolio', () => {
         targetNodeId: 'color1',
       };
 
-      const blueprint: Blueprint = {
+      const layout: Layout = {
         svg: mockSvg,
         connections: [connection],
         components: [colorComponent],
@@ -180,7 +180,7 @@ describe('renderFlowMolio', () => {
         data1: { newColor: '#purple' },
       };
 
-      const result = renderFlowMolio(blueprint, dataSources);
+      const result = renderFlowMolio(layout, dataSources);
       expect(result).toEqual(
         `<svg width="100" height="100"><rect id="rect1" fill="#purple" stroke="#0000ff" /><circle id="circle1" fill="#purple" /><defs ><lineargradient ><stop stop-color="#ff0000" offset="0%" /></lineargradient></defs></svg>`,
       );
@@ -204,7 +204,7 @@ describe('renderFlowMolio', () => {
         targetNodeId: 'color1',
       };
 
-      const blueprint: Blueprint = {
+      const layout: Layout = {
         svg: mockSvg,
         connections: [connection],
         components: [colorComponent],
@@ -214,7 +214,7 @@ describe('renderFlowMolio', () => {
         data1: { invalidColor: null },
       };
 
-      const result = renderFlowMolio(blueprint, dataSources);
+      const result = renderFlowMolio(layout, dataSources);
       expect(result).toEqual(
         `<svg width="100" height="100"><rect id="rect1" fill="#ff0000" stroke="#0000ff" /><circle id="circle1" fill="#ff0000" /><defs ><lineargradient ><stop stop-color="#ff0000" offset="0%" /></lineargradient></defs></svg>`,
       );
@@ -239,7 +239,7 @@ describe('renderFlowMolio', () => {
         targetNodeId: 'color1',
       };
 
-      const blueprint: Blueprint = {
+      const layout: Layout = {
         svg: mockSvg,
         connections: [connection],
         components: [colorComponent],
@@ -249,7 +249,7 @@ describe('renderFlowMolio', () => {
         data1: { newColor: '#00ff00' },
       };
 
-      const result = renderFlowMolio(blueprint, dataSources);
+      const result = renderFlowMolio(layout, dataSources);
       expect(result).toEqual(
         `<svg width="100" height="100"><rect id="rect1" fill="#00ff00" stroke="#0000ff" /><circle id="circle1" fill="#ff0000" /><defs ><lineargradient ><stop stop-color="#ff0000" offset="0%" /></lineargradient></defs></svg>`,
       );
@@ -274,7 +274,7 @@ describe('renderFlowMolio', () => {
         targetNodeId: 'color1',
       };
 
-      const blueprint: Blueprint = {
+      const layout: Layout = {
         svg: mockSvg,
         connections: [connection],
         components: [colorComponent],
@@ -284,7 +284,7 @@ describe('renderFlowMolio', () => {
         data1: { newColor: '#00ff00' },
       };
 
-      const result = renderFlowMolio(blueprint, dataSources);
+      const result = renderFlowMolio(layout, dataSources);
       expect(result).toEqual(
         `<svg width="100" height="100"><rect id="rect1" fill="#00ff00" stroke="#0000ff" /><circle id="circle1" fill="#00ff00" /><defs ><lineargradient ><stop stop-color="#ff0000" offset="0%" /></lineargradient></defs></svg>`,
       );
@@ -309,7 +309,7 @@ describe('renderFlowMolio', () => {
         targetNodeId: 'color1',
       };
 
-      const blueprint: Blueprint = {
+      const layout: Layout = {
         svg: mockSvg,
         connections: [connection],
         components: [colorComponent],
@@ -319,7 +319,7 @@ describe('renderFlowMolio', () => {
         data1: { newColor: '#00ff00' },
       };
 
-      const result = renderFlowMolio(blueprint, dataSources);
+      const result = renderFlowMolio(layout, dataSources);
       expect(result).toEqual(
         `<svg width="100" height="100"><rect id="rect1" fill="#00ff00" stroke="#0000ff" /><circle id="circle1" fill="#00ff00" /><defs ><lineargradient ><stop stop-color="#ff0000" offset="0%" /></lineargradient></defs></svg>`,
       );
@@ -352,7 +352,7 @@ describe('renderFlowMolio', () => {
         targetNodeId: 'color1',
       };
 
-      const blueprint: Blueprint = {
+      const layout: Layout = {
         svg: mockSvgMultiple,
         connections: [connection],
         components: [colorComponent],
@@ -362,7 +362,7 @@ describe('renderFlowMolio', () => {
         data1: { newColor: '#00ff00' },
       };
 
-      const result = renderFlowMolio(blueprint, dataSources);
+      const result = renderFlowMolio(layout, dataSources);
       expect(result).toEqual(
         `<svg width="100" height="100"><rect id="rect1" fill="#00ff00" stroke="#0000ff" /><rect id="rect2" fill="#ff0000" stroke="#0000ff" /><circle id="circle1" fill="#00ff00" /></svg>`,
       );
@@ -387,7 +387,7 @@ describe('renderFlowMolio', () => {
         targetNodeId: 'color1',
       };
 
-      const blueprint: Blueprint = {
+      const layout: Layout = {
         svg: mockSvg,
         connections: [connection],
         components: [colorComponent],
@@ -397,7 +397,7 @@ describe('renderFlowMolio', () => {
         data1: { strokeColor: '#ff00ff' },
       };
 
-      const result = renderFlowMolio(blueprint, dataSources);
+      const result = renderFlowMolio(layout, dataSources);
       expect(result).toEqual(
         `<svg width="100" height="100"><rect id="rect1" fill="#ff0000" stroke="#ff00ff" /><circle id="circle1" fill="#ff0000" /><defs ><lineargradient ><stop stop-color="#ff0000" offset="0%" /></lineargradient></defs></svg>`,
       );

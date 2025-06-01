@@ -1,6 +1,6 @@
 import {
   Connection,
-  Blueprint,
+  Layout,
   Component,
   ColorReplacementComponent,
   ColorRole,
@@ -121,34 +121,34 @@ function getValueFromDataSource(dataSources: DataSources, connection: Connection
 }
 
 /**
- * Renders an SVG with data bindings and color node processing
+ * Renders an SVG with data bindings and color component processing
  * This is a pure rendering function without any hover/inspection functionality
  */
-export function renderFlowMolio(blueprint: Blueprint, dataSources: DataSources): string {
-  if (!blueprint.svg) {
+export function renderFlowMolio(layout: Layout, dataSources: DataSources): string {
+  if (!layout.svg) {
     return '<div>No SVG template provided</div>';
   }
 
   try {
     // Parse the SVG
-    const svgTree = parseSVG(blueprint.svg);
+    const svgTree = parseSVG(layout.svg);
 
     // Apply data bindings
     applyDataBindings({
       svgTree,
-      connections: blueprint.connections,
+      connections: layout.connections,
       dataSources,
-      components: blueprint.components || [],
+      components: layout.components || [],
     });
 
     // Apply color component changes if there are components and connections
     if (
-      blueprint.components &&
-      blueprint.components.length > 0 &&
-      blueprint.connections &&
-      blueprint.connections.length > 0
+      layout.components &&
+      layout.components.length > 0 &&
+      layout.connections &&
+      layout.connections.length > 0
     ) {
-      applyColorComponents(svgTree, blueprint.components, blueprint.connections, dataSources);
+      applyColorComponents(svgTree, layout.components, layout.connections, dataSources);
     }
 
     // Serialize the modified SVG back to string

@@ -1,4 +1,4 @@
-import { Blueprint, Connection, Component, DataSources } from '../../types';
+import { Layout, Connection, Component, DataSources } from '../../types';
 import { renderFlowMolio } from '../renderFlowMolio';
 
 describe('renderFlowMolio - Images', () => {
@@ -22,7 +22,7 @@ describe('renderFlowMolio - Images', () => {
         targetNodeId: 'node1',
       };
 
-      const blueprint: Blueprint = {
+      const layout: Layout = {
         svg: mockSvg,
         connections: [connection],
         components: [imageComponent],
@@ -32,7 +32,7 @@ describe('renderFlowMolio - Images', () => {
         data1: { imageUrl: 'https://example.com/new-image.jpg' },
       };
 
-      const result = renderFlowMolio(blueprint, dataSources);
+      const result = renderFlowMolio(layout, dataSources);
       expect(result).toEqual(
         `<svg width="100" height="100"><image id="img1" href="https://example.com/new-image.jpg" xlink:href="https://example.com/new-image.jpg" /></svg>`,
       );
