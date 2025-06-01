@@ -1,8 +1,8 @@
-import { Blueprint, Connection, NodeData, DataSources } from '../../types';
+import { Blueprint, Connection, Component, DataSources } from '../../types';
 import { renderFlowMolio } from '../renderFlowMolio';
 
 describe('renderFlowMolio - Texts', () => {
-  describe('Text node data binding', () => {
+  describe('Text component data binding', () => {
     const mockSvg = `
       <svg width="100" height="100">
         <text id="text1"><tspan x="0" y="0">Original Text</tspan></text>
@@ -11,7 +11,7 @@ describe('renderFlowMolio - Texts', () => {
     `;
 
     it('should apply text data binding correctly', () => {
-      const textNode: NodeData = {
+      const textComponent: Component = {
         id: 'node1',
         type: 'text',
         elementId: 'text1',
@@ -26,7 +26,7 @@ describe('renderFlowMolio - Texts', () => {
       const blueprint: Blueprint = {
         svg: mockSvg,
         connections: [connection],
-        nodes: [textNode],
+        components: [textComponent],
       };
 
       const dataSources: DataSources = {
@@ -40,7 +40,7 @@ describe('renderFlowMolio - Texts', () => {
     });
 
     it('should handle nested data paths with dot notation', () => {
-      const textNode: NodeData = {
+      const textComponent: Component = {
         id: 'node1',
         type: 'text',
         elementId: 'text1',
@@ -55,7 +55,7 @@ describe('renderFlowMolio - Texts', () => {
       const blueprint: Blueprint = {
         svg: mockSvg,
         connections: [connection],
-        nodes: [textNode],
+        components: [textComponent],
       };
 
       const dataSources: DataSources = {
@@ -73,7 +73,7 @@ describe('renderFlowMolio - Texts', () => {
     });
 
     it('should handle missing data sources gracefully', () => {
-      const textNode: NodeData = {
+      const textComponent: Component = {
         id: 'node1',
         type: 'text',
         elementId: 'text1',
@@ -88,7 +88,7 @@ describe('renderFlowMolio - Texts', () => {
       const blueprint: Blueprint = {
         svg: mockSvg,
         connections: [connection],
-        nodes: [textNode],
+        components: [textComponent],
       };
 
       const dataSources: DataSources = {};
@@ -100,7 +100,7 @@ describe('renderFlowMolio - Texts', () => {
     });
 
     it('should handle missing fields in data sources', () => {
-      const textNode: NodeData = {
+      const textComponent: Component = {
         id: 'node1',
         type: 'text',
         elementId: 'text1',
@@ -115,7 +115,7 @@ describe('renderFlowMolio - Texts', () => {
       const blueprint: Blueprint = {
         svg: mockSvg,
         connections: [connection],
-        nodes: [textNode],
+        components: [textComponent],
       };
 
       const dataSources: DataSources = {
@@ -130,13 +130,13 @@ describe('renderFlowMolio - Texts', () => {
   });
 
   it('should apply text data binding correctly to text elements without ids', () => {
-    const textNode0: NodeData = {
+    const textComponent0: Component = {
       id: 'node1',
       type: 'text',
       elementId: 'fmo-text-1',
     };
 
-    const textNode1: NodeData = {
+    const textComponent1: Component = {
       id: 'node2',
       type: 'text',
       elementId: 'fmo-text-2',
@@ -164,7 +164,7 @@ describe('renderFlowMolio - Texts', () => {
     const blueprint: Blueprint = {
       svg: sampleSvg,
       connections: [connection0, connection1],
-      nodes: [textNode0, textNode1],
+      components: [textComponent0, textComponent1],
     };
 
     const dataSources: DataSources = {

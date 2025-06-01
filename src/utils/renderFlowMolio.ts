@@ -1,8 +1,8 @@
 import {
   Connection,
   Blueprint,
-  NodeData,
-  ColorNodeData,
+  Component,
+  ColorReplacementComponent,
   ColorRole,
   DataSources,
   SVGElementNode,
@@ -13,52 +13,52 @@ import { applyDataBindings, serializeSVG } from './renderUtils';
 import { parseSVG } from './svgUtils';
 
 /**
- * Processes color nodes to apply color changes to SVG elements based on connections
+ * Processes color components to apply color changes to SVG elements based on connections
  */
-function applyColorNodes(
+function applyColorComponents(
   svgTree: SVGElementNode,
-  nodes: NodeData[],
+  components: Component[],
   connections: Connection[],
   dataSources: DataSources,
 ): void {
-  // Find connections to color nodes
-  const colorNodeConnections = connections.filter(conn => {
-    const targetNode = nodes.find(n => n.id === conn.targetNodeId);
-    return targetNode && targetNode.type === 'color';
+  // Find connections to color components
+  const colorComponentConnections = connections.filter(conn => {
+    const targetComponent = components.find(c => c.id === conn.targetNodeId);
+    return targetComponent && targetComponent.type === 'color';
   });
 
-  // If no connections to color nodes, nothing to do
-  if (colorNodeConnections.length === 0) return;
+  // If no connections to color components, nothing to do
+  if (colorComponentConnections.length === 0) return;
 
-  // Process each connection to a color node
-  colorNodeConnections.forEach(connection => {
-    // Find the target color node
-    const colorNode = nodes.find(n => n.id === connection.targetNodeId && n.type === 'color') as
-      | ColorNodeData
-      | undefined;
+  // Process each connection to a color component
+  colorComponentConnections.forEach(connection => {
+    // Find the target color component
+    const colorComponent = components.find(
+      c => c.id === connection.targetNodeId && c.type === 'color',
+    ) as ColorReplacementComponent | undefined;
 
-    if (!colorNode) return;
+    if (!colorComponent) return;
 
     // Get the color value from the data source
     const sourceValue = getValueFromDataSource(dataSources, connection);
     if (!sourceValue || typeof sourceValue !== 'string') return;
 
     // This is the color we want to replace
-    const targetColor = colorNode.color;
+    const targetColor = colorComponent.color;
     if (!targetColor) return;
 
     // Get all elements in the SVG tree
     const applyColorToElements = (element: SVGElementNode) => {
       // If elementIds is specified and not empty, only apply to those specific elements
       const shouldApplyToElement =
-        !colorNode.elementIds ||
-        colorNode.elementIds.length === 0 ||
-        (element.id && colorNode.elementIds.includes(element.id));
+        !colorComponent.elementIds ||
+        colorComponent.elementIds.length === 0 ||
+        (element.id && colorComponent.elementIds.includes(element.id));
 
       if (shouldApplyToElement) {
         // Apply colors based on enabled roles, but only if they match the target color
         if (
-          colorNode.enabledRoles[ColorRole.FILL] &&
+          colorComponent.enabledRoles[ColorRole.FILL] &&
           element.attributes.fill &&
           element.attributes.fill.toLowerCase() === targetColor.toLowerCase()
         ) {
@@ -66,7 +66,7 @@ function applyColorNodes(
         }
 
         if (
-          colorNode.enabledRoles[ColorRole.STROKE] &&
+          colorComponent.enabledRoles[ColorRole.STROKE] &&
           element.attributes.stroke &&
           element.attributes.stroke.toLowerCase() === targetColor.toLowerCase()
         ) {
@@ -74,7 +74,7 @@ function applyColorNodes(
         }
 
         if (
-          colorNode.enabledRoles[ColorRole.STOP_COLOR] &&
+          colorComponent.enabledRoles[ColorRole.STOP_COLOR] &&
           element.tagName === 'stop' &&
           element.attributes['stop-color'] &&
           element.attributes['stop-color'].toLowerCase() === targetColor.toLowerCase()
@@ -138,17 +138,17 @@ export function renderFlowMolio(blueprint: Blueprint, dataSources: DataSources):
       svgTree,
       connections: blueprint.connections,
       dataSources,
-      nodes: blueprint.nodes || [],
+      components: blueprint.components || [],
     });
 
-    // Apply color node changes if there are nodes and connections
+    // Apply color component changes if there are components and connections
     if (
-      blueprint.nodes &&
-      blueprint.nodes.length > 0 &&
+      blueprint.components &&
+      blueprint.components.length > 0 &&
       blueprint.connections &&
       blueprint.connections.length > 0
     ) {
-      applyColorNodes(svgTree, blueprint.nodes, blueprint.connections, dataSources);
+      applyColorComponents(svgTree, blueprint.components, blueprint.connections, dataSources);
     }
 
     // Serialize the modified SVG back to string

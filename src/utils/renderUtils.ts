@@ -31,19 +31,19 @@ export function applyDataBindings({
   svgTree,
   connections,
   dataSources,
-  nodes = [],
+  components = [],
 }: DataBindingContext): void {
   // Process each connection
   connections.forEach(connection => {
-    // Find the target node
-    const targetNode = nodes.find(node => node.id === connection.targetNodeId);
-    if (!targetNode) {
+    // Find the target component
+    const targetComponent = components.find(component => component.id === connection.targetNodeId);
+    if (!targetComponent) {
       return;
     }
 
-    // Handle based on node type
-    if (targetNode.type === 'text' || targetNode.type === 'image') {
-      const elementId = targetNode.elementId;
+    // Handle based on component type
+    if (targetComponent.type === 'text' || targetComponent.type === 'image') {
+      const elementId = targetComponent.elementId;
 
       // Find the target element in the SVG
       const targetElement = findElementById(svgTree, elementId);
@@ -59,7 +59,7 @@ export function applyDataBindings({
       if (dataValue === undefined) return;
 
       // Apply the value based on element type
-      if (targetNode.type === 'text' && targetElement.isText) {
+      if (targetComponent.type === 'text' && targetElement.isText) {
         // For text elements, we need to handle the innerHTML for Figma's tspan elements
         const dataString = String(dataValue);
 
@@ -89,13 +89,13 @@ export function applyDataBindings({
 
         // Also update textContent for compatibility
         targetElement.textContent = dataString;
-      } else if (targetNode.type === 'image' && targetElement.isImage) {
+      } else if (targetComponent.type === 'image' && targetElement.isImage) {
         // For image elements, update the href/xlink:href attribute
         targetElement.attributes['href'] = String(dataValue);
         targetElement.attributes['xlink:href'] = String(dataValue);
       }
     }
-    // Color nodes are handled separately in applyColorNodes function
+    // Color components are handled separately in applyColorComponents function
   });
 }
 

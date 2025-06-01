@@ -25,22 +25,22 @@ export interface Connection {
   targetNodeId: string;
 }
 
-// Node type definitions
-export interface BaseNodeData {
+// Component type definitions
+export interface BaseComponent {
   id: string;
 }
 
-export interface TextNodeData extends BaseNodeData {
+export interface TextLayoutComponent extends BaseComponent {
   type: 'text';
   elementId: string;
 }
 
-export interface ImageNodeData extends BaseNodeData {
+export interface ImageLayoutComponent extends BaseComponent {
   type: 'image';
   elementId: string;
 }
 
-export interface ColorNodeData extends BaseNodeData {
+export interface ColorReplacementComponent extends BaseComponent {
   type: 'color';
   color: string;
   enabledRoles: {
@@ -51,8 +51,8 @@ export interface ColorNodeData extends BaseNodeData {
   elementIds?: string[];
 }
 
-// Union type for all node types
-export type NodeData = TextNodeData | ImageNodeData | ColorNodeData;
+// Union type for all component types
+export type Component = TextLayoutComponent | ImageLayoutComponent | ColorReplacementComponent;
 
 // JSON value type representing any valid JSON value
 export type JSONValue =
@@ -66,11 +66,11 @@ export type JSONValue =
 // Data sources type - a record of data source IDs to JSON objects
 export type DataSources = Record<string, JSONValue>;
 
-// Blueprint containing SVG, connections, and nodes
+// Blueprint containing SVG, connections, and components
 export interface Blueprint {
   svg: string;
   connections: Connection[];
-  nodes: NodeData[];
+  components: Component[];
 }
 
 // Data binding context for applying values to elements
@@ -78,5 +78,5 @@ export interface DataBindingContext {
   svgTree: SVGElementNode;
   connections: Connection[];
   dataSources: DataSources;
-  nodes?: NodeData[];
+  components?: Component[];
 }

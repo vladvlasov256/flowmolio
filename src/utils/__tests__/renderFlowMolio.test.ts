@@ -1,4 +1,4 @@
-import { Blueprint, Connection, NodeData, ColorRole, DataSources } from '../../types';
+import { Blueprint, Connection, Component, ColorRole, DataSources } from '../../types';
 import { renderFlowMolio } from '../renderFlowMolio';
 
 describe('renderFlowMolio', () => {
@@ -7,7 +7,7 @@ describe('renderFlowMolio', () => {
       const blueprint: Blueprint = {
         svg: '',
         connections: [],
-        nodes: [],
+        components: [],
       };
 
       const result = renderFlowMolio(blueprint, {});
@@ -18,7 +18,7 @@ describe('renderFlowMolio', () => {
       const blueprint: Blueprint = {
         svg: '<svg></svg>',
         connections: [],
-        nodes: [],
+        components: [],
       };
 
       const result = renderFlowMolio(blueprint, {});
@@ -29,7 +29,7 @@ describe('renderFlowMolio', () => {
       const blueprint: Blueprint = {
         svg: 'invalid-svg',
         connections: [],
-        nodes: [],
+        components: [],
       };
 
       const result = renderFlowMolio(blueprint, {});
@@ -49,7 +49,7 @@ describe('renderFlowMolio', () => {
     `;
 
     it('should handle multiple data bindings simultaneously', () => {
-      const nodes: NodeData[] = [
+      const components: Component[] = [
         { id: 'titleNode', type: 'text', elementId: 'title' },
         { id: 'priceNode', type: 'text', elementId: 'price' },
         { id: 'imgNode', type: 'image', elementId: 'product-img' },
@@ -75,7 +75,7 @@ describe('renderFlowMolio', () => {
       const blueprint: Blueprint = {
         svg: complexSvg,
         connections,
-        nodes,
+        components,
       };
 
       const dataSources: DataSources = {
@@ -96,7 +96,7 @@ describe('renderFlowMolio', () => {
     });
 
     it('should handle partial data gracefully', () => {
-      const nodes: NodeData[] = [
+      const components: Component[] = [
         { id: 'titleNode', type: 'text', elementId: 'title' },
         { id: 'priceNode', type: 'text', elementId: 'price' },
       ];
@@ -109,7 +109,7 @@ describe('renderFlowMolio', () => {
       const blueprint: Blueprint = {
         svg: complexSvg,
         connections,
-        nodes,
+        components,
       };
 
       const dataSources: DataSources = {
@@ -124,7 +124,7 @@ describe('renderFlowMolio', () => {
       );
     });
 
-    it('should handle connections without matching nodes', () => {
+    it('should handle connections without matching components', () => {
       const connections: Connection[] = [
         { sourceNodeId: 'product', sourceField: 'name', targetNodeId: 'nonexistentNode' },
       ];
@@ -132,7 +132,7 @@ describe('renderFlowMolio', () => {
       const blueprint: Blueprint = {
         svg: complexSvg,
         connections,
-        nodes: [],
+        components: [],
       };
 
       const dataSources: DataSources = {
@@ -143,8 +143,8 @@ describe('renderFlowMolio', () => {
       expect(result).toContain('Product Title'); // Original text should remain
     });
 
-    it('should handle nodes without matching elements', () => {
-      const nodes: NodeData[] = [
+    it('should handle components without matching elements', () => {
+      const components: Component[] = [
         { id: 'titleNode', type: 'text', elementId: 'nonexistentElement' },
       ];
 
@@ -155,7 +155,7 @@ describe('renderFlowMolio', () => {
       const blueprint: Blueprint = {
         svg: complexSvg,
         connections,
-        nodes,
+        components,
       };
 
       const dataSources: DataSources = {
@@ -172,7 +172,7 @@ describe('renderFlowMolio', () => {
       const blueprint: Blueprint = {
         svg: '<svg><text id="test">Test</text></svg>',
         connections: [],
-        nodes: [],
+        components: [],
       };
 
       const result = renderFlowMolio(blueprint, {});
@@ -183,7 +183,7 @@ describe('renderFlowMolio', () => {
       const blueprint: Blueprint = {
         svg: '<svg><text id="test">Test</text></svg>',
         connections: [],
-        nodes: [],
+        components: [],
       };
 
       const result = renderFlowMolio(blueprint, {} as DataSources);
@@ -194,12 +194,12 @@ describe('renderFlowMolio', () => {
       const blueprint: Blueprint = {
         svg: '<svg><text id="test">Test</text></svg>',
         connections: [],
-        nodes: [],
+        components: [],
       };
 
-      // Remove nodes property to test undefined handling
+      // Remove components property to test undefined handling
       const partialBlueprint: Partial<Blueprint> = { ...blueprint };
-      delete partialBlueprint.nodes;
+      delete partialBlueprint.components;
 
       const result = renderFlowMolio(partialBlueprint as Blueprint, {});
       expect(result).toContain('Test');

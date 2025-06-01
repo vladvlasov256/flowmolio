@@ -1,8 +1,8 @@
-import { Blueprint, Connection, NodeData, ColorRole, DataSources } from '../../types';
+import { Blueprint, Connection, Component, ColorRole, DataSources } from '../../types';
 import { renderFlowMolio } from '../renderFlowMolio';
 
 describe('renderFlowMolio', () => {
-  describe('Color node processing', () => {
+  describe('Color component processing', () => {
     const mockSvg = `
       <svg width="100" height="100">
         <rect id="rect1" fill="#ff0000" stroke="#0000ff"/>
@@ -17,7 +17,7 @@ describe('renderFlowMolio', () => {
     // `<svg width="100" height="100"><rect id="rect1" fill="#ff0000" stroke="#0000ff" /><circle id="circle1" fill="#ff0000" /><defs ><lineargradient ><stop stop-color="#ff0000" offset="0%" /></lineargradient></defs></svg>`
 
     it('should apply color changes based on fill role', () => {
-      const colorNode: NodeData = {
+      const colorComponent: Component = {
         id: 'color1',
         type: 'color',
         color: '#ff0000',
@@ -37,7 +37,7 @@ describe('renderFlowMolio', () => {
       const blueprint: Blueprint = {
         svg: mockSvg,
         connections: [connection],
-        nodes: [colorNode],
+        components: [colorComponent],
       };
 
       const dataSources: DataSources = {
@@ -51,7 +51,7 @@ describe('renderFlowMolio', () => {
     });
 
     it('should apply color changes based on stroke role', () => {
-      const colorNode: NodeData = {
+      const colorComponent: Component = {
         id: 'color1',
         type: 'color',
         color: '#0000ff',
@@ -71,7 +71,7 @@ describe('renderFlowMolio', () => {
       const blueprint: Blueprint = {
         svg: mockSvg,
         connections: [connection],
-        nodes: [colorNode],
+        components: [colorComponent],
       };
 
       const dataSources: DataSources = {
@@ -85,7 +85,7 @@ describe('renderFlowMolio', () => {
     });
 
     it('should apply color changes based on stop-color role', () => {
-      const colorNode: NodeData = {
+      const colorComponent: Component = {
         id: 'color1',
         type: 'color',
         color: '#ff0000',
@@ -105,7 +105,7 @@ describe('renderFlowMolio', () => {
       const blueprint: Blueprint = {
         svg: mockSvg,
         connections: [connection],
-        nodes: [colorNode],
+        components: [colorComponent],
       };
 
       const dataSources: DataSources = {
@@ -119,7 +119,7 @@ describe('renderFlowMolio', () => {
     });
 
     it('should handle multiple enabled color roles', () => {
-      const colorNode: NodeData = {
+      const colorComponent: Component = {
         id: 'color1',
         type: 'color',
         color: '#ff0000',
@@ -139,7 +139,7 @@ describe('renderFlowMolio', () => {
       const blueprint: Blueprint = {
         svg: mockSvg,
         connections: [connection],
-        nodes: [colorNode],
+        components: [colorComponent],
       };
 
       const dataSources: DataSources = {
@@ -153,7 +153,7 @@ describe('renderFlowMolio', () => {
     });
 
     it('should only replace colors that match the target color exactly', () => {
-      const colorNode: NodeData = {
+      const colorComponent: Component = {
         id: 'color1',
         type: 'color',
         color: '#ff0000',
@@ -173,7 +173,7 @@ describe('renderFlowMolio', () => {
       const blueprint: Blueprint = {
         svg: mockSvg,
         connections: [connection],
-        nodes: [colorNode],
+        components: [colorComponent],
       };
 
       const dataSources: DataSources = {
@@ -187,7 +187,7 @@ describe('renderFlowMolio', () => {
     });
 
     it('should handle invalid color values gracefully', () => {
-      const colorNode: NodeData = {
+      const colorComponent: Component = {
         id: 'color1',
         type: 'color',
         color: '#ff0000',
@@ -207,7 +207,7 @@ describe('renderFlowMolio', () => {
       const blueprint: Blueprint = {
         svg: mockSvg,
         connections: [connection],
-        nodes: [colorNode],
+        components: [colorComponent],
       };
 
       const dataSources: DataSources = {
@@ -221,7 +221,7 @@ describe('renderFlowMolio', () => {
     });
 
     it('should apply colors only to specified element IDs when elementIds is provided', () => {
-      const colorNode: NodeData = {
+      const colorComponent: Component = {
         id: 'color1',
         type: 'color',
         color: '#ff0000',
@@ -242,7 +242,7 @@ describe('renderFlowMolio', () => {
       const blueprint: Blueprint = {
         svg: mockSvg,
         connections: [connection],
-        nodes: [colorNode],
+        components: [colorComponent],
       };
 
       const dataSources: DataSources = {
@@ -256,7 +256,7 @@ describe('renderFlowMolio', () => {
     });
 
     it('should apply colors to all elements when elementIds is empty array', () => {
-      const colorNode: NodeData = {
+      const colorComponent: Component = {
         id: 'color1',
         type: 'color',
         color: '#ff0000',
@@ -277,7 +277,7 @@ describe('renderFlowMolio', () => {
       const blueprint: Blueprint = {
         svg: mockSvg,
         connections: [connection],
-        nodes: [colorNode],
+        components: [colorComponent],
       };
 
       const dataSources: DataSources = {
@@ -291,7 +291,7 @@ describe('renderFlowMolio', () => {
     });
 
     it('should apply colors to all elements when elementIds is not provided', () => {
-      const colorNode: NodeData = {
+      const colorComponent: Component = {
         id: 'color1',
         type: 'color',
         color: '#ff0000',
@@ -312,7 +312,7 @@ describe('renderFlowMolio', () => {
       const blueprint: Blueprint = {
         svg: mockSvg,
         connections: [connection],
-        nodes: [colorNode],
+        components: [colorComponent],
       };
 
       const dataSources: DataSources = {
@@ -334,7 +334,7 @@ describe('renderFlowMolio', () => {
         </svg>
       `;
 
-      const colorNode: NodeData = {
+      const colorComponent: Component = {
         id: 'color1',
         type: 'color',
         color: '#ff0000',
@@ -355,7 +355,7 @@ describe('renderFlowMolio', () => {
       const blueprint: Blueprint = {
         svg: mockSvgMultiple,
         connections: [connection],
-        nodes: [colorNode],
+        components: [colorComponent],
       };
 
       const dataSources: DataSources = {
@@ -369,7 +369,7 @@ describe('renderFlowMolio', () => {
     });
 
     it('should work with element IDs and multiple color roles', () => {
-      const colorNode: NodeData = {
+      const colorComponent: Component = {
         id: 'color1',
         type: 'color',
         color: '#0000ff',
@@ -390,7 +390,7 @@ describe('renderFlowMolio', () => {
       const blueprint: Blueprint = {
         svg: mockSvg,
         connections: [connection],
-        nodes: [colorNode],
+        components: [colorComponent],
       };
 
       const dataSources: DataSources = {

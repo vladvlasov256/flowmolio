@@ -1,8 +1,8 @@
-import { Blueprint, Connection, NodeData, DataSources } from '../../types';
+import { Blueprint, Connection, Component, DataSources } from '../../types';
 import { renderFlowMolio } from '../renderFlowMolio';
 
 describe('renderFlowMolio - Images', () => {
-  describe('Image node data binding', () => {
+  describe('Image component data binding', () => {
     const mockSvg = `
       <svg width="100" height="100">
         <image id="img1" href="original.jpg" xlink:href="original.jpg"/>
@@ -10,7 +10,7 @@ describe('renderFlowMolio - Images', () => {
     `;
 
     it('should apply image URL binding correctly', () => {
-      const imageNode: NodeData = {
+      const imageComponent: Component = {
         id: 'node1',
         type: 'image',
         elementId: 'img1',
@@ -25,7 +25,7 @@ describe('renderFlowMolio - Images', () => {
       const blueprint: Blueprint = {
         svg: mockSvg,
         connections: [connection],
-        nodes: [imageNode],
+        components: [imageComponent],
       };
 
       const dataSources: DataSources = {
