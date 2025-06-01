@@ -64,8 +64,23 @@ const product = {
   ...
 }
 
-// FlowMolio layout
-const flowmolio = {} 
+// FlowMolio blueprint (exported from FlowMolio Studio)
+const blueprint = {} 
 
-<FlowMolioPreview dataSources={{"data-source-1": product}} layout={flowmolio} />
+<FlowMolioPreview dataSources={{"data-source-1": product}} blueprint={blueprint} />
+```
+
+For direct rendering without React:
+
+```typescript
+import { renderFlowMolio, convertBlueprintToLayout } from 'flowmolio'
+
+// Convert blueprint (whole FlowMolio project) to layout (rendering data)
+const layout = convertBlueprintToLayout(blueprint)
+
+// Render SVG string
+const svgString = renderFlowMolio(layout, dataSources)
+
+// Use the SVG string in your application
+document.getElementById('container').innerHTML = svgString
 ```
