@@ -30,19 +30,26 @@ export interface BaseComponent {
   id: string;
 }
 
+/**
+ * Text rendering strategy for text layout components.
+ * - **Constrained** means the text width is limited to a specific value.
+ * - **Natural** means the text width is determined by its content without constraints.
+ */
+export type TextRenderingStrategy = {
+  width:
+    | {
+        type: 'constrained';
+        value: number;
+      }
+    | {
+        type: 'natural';
+      };
+};
+
 export interface TextLayoutComponent extends BaseComponent {
   type: 'text';
   elementId: string;
-  renderingStrategy?: {
-    width:
-      | {
-          type: 'constrained';
-          value: number;
-        }
-      | {
-          type: 'natural';
-        };
-  };
+  renderingStrategy?: TextRenderingStrategy;
 }
 
 export interface ImageLayoutComponent extends BaseComponent {
