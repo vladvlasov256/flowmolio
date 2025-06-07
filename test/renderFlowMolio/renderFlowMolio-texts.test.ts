@@ -504,6 +504,315 @@ describe('renderFlowMolio - Texts', () => {
     });
   });
 
+  describe('Height adjustment for constrained text', () => {
+    it('should shift elements below when text height increases', () => {
+      const mockSvgWithElementsBelow = `
+        <svg width="200" height="100">
+          <text id="text1"><tspan x="10" y="20" font-family="Arial" font-size="12">Short</tspan></text>
+          <rect x="10" y="40" width="50" height="20" fill="blue" />
+          <circle cx="50" cy="80" r="10" fill="red" />
+        </svg>
+      `;
+
+      const textComponent: Component = {
+        id: 'node1',
+        type: 'text',
+        elementId: 'text1',
+        renderingStrategy: {
+          width: {
+            type: 'constrained',
+            value: 60
+          }
+        }
+      };
+
+      const connection: Connection = {
+        sourceNodeId: 'data1',
+        sourceField: 'longText',
+        targetNodeId: 'node1',
+      };
+
+      const layout: Layout = {
+        svg: mockSvgWithElementsBelow,
+        connections: [connection],
+        components: [textComponent],
+      };
+
+      const dataSources: DataSources = {
+        data1: { longText: 'This is a much longer text that will definitely span multiple lines and increase the overall height' },
+      };
+
+      const result = renderFlowMolio(layout, dataSources);
+      
+      // Elements below should be shifted down
+      // Original rect was at y="40", should now be at a higher y value
+      const rectMatch = result.match(/<rect[^>]*y="([^"]*)"[^>]*>/);
+      expect(rectMatch).toBeTruthy();
+      const rectY = parseFloat(rectMatch![1]);
+      expect(rectY).toBeGreaterThan(40);
+      
+      // Original circle was at cy="80", should now be at a higher cy value
+      const circleMatch = result.match(/<circle[^>]*cy="([^"]*)"[^>]*>/);
+      expect(circleMatch).toBeTruthy();
+      const circleY = parseFloat(circleMatch![1]);
+      expect(circleY).toBeGreaterThan(80);
+      
+      // SVG height should be increased
+      const svgMatch = result.match(/<svg[^>]*height="([^"]*)"[^>]*>/);
+      expect(svgMatch).toBeTruthy();
+      const svgHeight = parseFloat(svgMatch![1]);
+      expect(svgHeight).toBeGreaterThan(100);
+    });
+
+    it('should handle elements positioned with transform translate', () => {
+      const mockSvgWithTransforms = `
+        <svg width="200" height="100">
+          <text id="text1"><tspan x="10" y="20" font-family="Arial" font-size="12">Short</tspan></text>
+          <g transform="translate(10, 50)">
+            <rect width="30" height="10" fill="green" />
+          </g>
+        </svg>
+      `;
+
+      const textComponent: Component = {
+        id: 'node1',
+        type: 'text',
+        elementId: 'text1',
+        renderingStrategy: {
+          width: {
+            type: 'constrained',
+            value: 50
+          }
+        }
+      };
+
+      const connection: Connection = {
+        sourceNodeId: 'data1',
+        sourceField: 'longText',
+        targetNodeId: 'node1',
+      };
+
+      const layout: Layout = {
+        svg: mockSvgWithTransforms,
+        connections: [connection],
+        components: [textComponent],
+      };
+
+      const dataSources: DataSources = {
+        data1: { longText: 'This is another long text that will cause height changes' },
+      };
+
+      const result = renderFlowMolio(layout, dataSources);
+      
+      // Transform translate should be adjusted
+      const transformMatch = result.match(/transform="translate\(([^,)]+),\s*([^)]+)\)"/);
+      expect(transformMatch).toBeTruthy();
+      const translateY = parseFloat(transformMatch![2]);
+      expect(translateY).toBeGreaterThan(50);
+    });
+
+    it('should not shift elements that are above the text', () => {
+      const mockSvgWithElementsAbove = `
+        <svg width="200" height="120">
+          <rect x="10" y="5" width="50" height="10" fill="blue" />
+          <text id="text1"><tspan x="10" y="30" font-family="Arial" font-size="12">Short</tspan></text>
+          <rect x="10" y="50" width="50" height="10" fill="red" />
+        </svg>
+      `;
+
+      const textComponent: Component = {
+        id: 'node1',
+        type: 'text',
+        elementId: 'text1',
+        renderingStrategy: {
+          width: {
+            type: 'constrained',
+            value: 40
+          }
+        }
+      };
+
+      const connection: Connection = {
+        sourceNodeId: 'data1',
+        sourceField: 'longText',
+        targetNodeId: 'node1',
+      };
+
+      const layout: Layout = {
+        svg: mockSvgWithElementsAbove,
+        connections: [connection],
+        components: [textComponent],
+      };
+
+      const dataSources: DataSources = {
+        data1: { longText: 'This text will expand and should only affect elements below' },
+      };
+
+      const result = renderFlowMolio(layout, dataSources);
+      
+      // First rect (above text) should remain at y="5"
+      const firstRectMatch = result.match(/<rect[^>]*y="5"[^>]*>/);
+      expect(firstRectMatch).toBeTruthy();
+      
+      // Second rect (below text) should be shifted
+      const allRectMatches = result.match(/<rect[^>]*y="([^"]*)"[^>]*>/g);
+      expect(allRectMatches).toBeTruthy();
+      expect(allRectMatches!.length).toBe(2);
+      
+      // Extract y values for all rects
+      const rectYValues = allRectMatches!.map(match => {
+        const yMatch = match.match(/y="([^"]*)"/);
+        return yMatch ? parseFloat(yMatch[1]) : 0;
+      });
+      
+      expect(rectYValues[0]).toBe(5); // First rect unchanged
+      expect(rectYValues[1]).toBeGreaterThan(50); // Second rect shifted
+    });
+
+    it('should not add height attribute to SVG without one', () => {
+      const mockSvgWithoutHeight = `
+        <svg width="200">
+          <text id="text1"><tspan x="10" y="20" font-family="Arial" font-size="12">Short</tspan></text>
+          <rect x="10" y="40" width="50" height="20" fill="blue" />
+        </svg>
+      `;
+
+      const textComponent: Component = {
+        id: 'node1',
+        type: 'text',
+        elementId: 'text1',
+        renderingStrategy: {
+          width: {
+            type: 'constrained',
+            value: 50
+          }
+        }
+      };
+
+      const connection: Connection = {
+        sourceNodeId: 'data1',
+        sourceField: 'longText',
+        targetNodeId: 'node1',
+      };
+
+      const layout: Layout = {
+        svg: mockSvgWithoutHeight,
+        connections: [connection],
+        components: [textComponent],
+      };
+
+      const dataSources: DataSources = {
+        data1: { longText: 'This is a much longer text that will definitely span multiple lines' },
+      };
+
+      const result = renderFlowMolio(layout, dataSources);
+      
+      // SVG should still not have a height attribute
+      const svgMatch = result.match(/<svg[^>]*>/);
+      expect(svgMatch).toBeTruthy();
+      expect(svgMatch![0]).not.toContain('height=');
+      
+      // But elements should still be shifted
+      const rectMatch = result.match(/<rect[^>]*y="([^"]*)"[^>]*>/);
+      expect(rectMatch).toBeTruthy();
+      const rectY = parseFloat(rectMatch![1]);
+      expect(rectY).toBeGreaterThan(40);
+    });
+
+    it('should shift path elements by adding transform attribute', () => {
+      const mockSvgWithPath = `
+        <svg width="200" height="100">
+          <text id="text1"><tspan x="10" y="20" font-family="Arial" font-size="12">Short</tspan></text>
+          <path d="M 10 50 L 60 50 L 35 80 Z" fill="green" />
+        </svg>
+      `;
+
+      const textComponent: Component = {
+        id: 'node1',
+        type: 'text',
+        elementId: 'text1',
+        renderingStrategy: {
+          width: {
+            type: 'constrained',
+            value: 50
+          }
+        }
+      };
+
+      const connection: Connection = {
+        sourceNodeId: 'data1',
+        sourceField: 'longText',
+        targetNodeId: 'node1',
+      };
+
+      const layout: Layout = {
+        svg: mockSvgWithPath,
+        connections: [connection],
+        components: [textComponent],
+      };
+
+      const dataSources: DataSources = {
+        data1: { longText: 'This is a much longer text that will definitely span multiple lines and push the path down' },
+      };
+
+      const result = renderFlowMolio(layout, dataSources);
+      
+      // Path should have a transform attribute added to shift it
+      const pathMatch = result.match(/<path[^>]*transform="translate\(0,\s*([^)]+)\)"[^>]*>/);
+      expect(pathMatch).toBeTruthy();
+      const translateY = parseFloat(pathMatch![1]);
+      expect(translateY).toBeGreaterThan(0);
+      
+      // Original path data should be preserved
+      expect(result).toContain('d="M 10 50 L 60 50 L 35 80 Z"');
+    });
+
+    it('should update existing transform on path elements', () => {
+      const mockSvgWithTransformedPath = `
+        <svg width="200" height="100">
+          <text id="text1"><tspan x="10" y="20" font-family="Arial" font-size="12">Short</tspan></text>
+          <path d="M 10 60 L 60 60 L 35 90 Z" transform="scale(1.5)" fill="blue" />
+        </svg>
+      `;
+
+      const textComponent: Component = {
+        id: 'node1',
+        type: 'text',
+        elementId: 'text1',
+        renderingStrategy: {
+          width: {
+            type: 'constrained',
+            value: 40
+          }
+        }
+      };
+
+      const connection: Connection = {
+        sourceNodeId: 'data1',
+        sourceField: 'longText',
+        targetNodeId: 'node1',
+      };
+
+      const layout: Layout = {
+        svg: mockSvgWithTransformedPath,
+        connections: [connection],
+        components: [textComponent],
+      };
+
+      const dataSources: DataSources = {
+        data1: { longText: 'This is another long text that will cause the path to be shifted down while preserving its existing transform' },
+      };
+
+      const result = renderFlowMolio(layout, dataSources);
+      
+      // Path should have both the translate and original scale transform
+      const pathMatch = result.match(/<path[^>]*transform="translate\(0,\s*([^)]+)\) scale\(1\.5\)"[^>]*>/);
+      expect(pathMatch).toBeTruthy();
+      const translateY = parseFloat(pathMatch![1]);
+      expect(translateY).toBeGreaterThan(0);
+    });
+  });
+
   it('should apply text data binding correctly to text elements without ids', () => {
     const textComponent0: Component = {
       id: 'node1',

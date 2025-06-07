@@ -6,6 +6,181 @@ import { findElementById } from './svgUtils';
 import { breakTextIntoLines, generateTspans, FontConfig } from './textUtils';
 
 /**
+ * Calculates the height of a text element based on its tspans
+ */
+function calculateTextElementHeight(element: SVGElementNode): number {
+  if (!element.innerHTML) return 0;
+  
+  const tspanMatches = element.innerHTML.match(/<tspan[^>]*y="([^"]*)"[^>]*>/g);
+  if (!tspanMatches || tspanMatches.length === 0) return 0;
+  
+  // Extract y coordinates
+  const yCoordinates = tspanMatches.map(match => {
+    const yMatch = match.match(/y="([^"]*)"/);
+    return yMatch ? parseFloat(yMatch[1]) : 0;
+  });
+  
+  if (yCoordinates.length === 1) return 0; // Single line has no additional height
+  
+  // Height is the difference between first and last line plus one line height
+  const minY = Math.min(...yCoordinates);
+  const maxY = Math.max(...yCoordinates);
+  
+  // Calculate line height using the same logic as rendering:
+  // Use difference between first and second tspan, or fallback to font size
+  let lineHeight: number;
+  if (yCoordinates.length >= 2) {
+    // Use the difference between first and second tspan y-coordinates
+    lineHeight = Math.abs(yCoordinates[1] - yCoordinates[0]);
+  } else {
+    // Fallback to dy attribute or font size estimate
+    const dyMatch = element.innerHTML.match(/dy="([^"]*)"/);
+    if (dyMatch) {
+      lineHeight = parseFloat(dyMatch[1]);
+    } else {
+      const fontSizeMatch = element.innerHTML.match(/font-size="([^"]*)"/);
+      const fontSize = fontSizeMatch ? parseFloat(fontSizeMatch[1]) : 12;
+      lineHeight = fontSize * 1.2;
+    }
+  }
+  
+  return maxY - minY + lineHeight;
+}
+
+/**
+ * Shifts elements that are positioned below the given y-coordinate
+ */
+function shiftElementsBelow(svgTree: SVGElementNode, belowY: number, deltaY: number): void {
+  function processElement(element: SVGElementNode): void {
+    // Check if element has a y coordinate and if it's below the threshold
+    const yAttr = element.attributes.y;
+    if (yAttr) {
+      const y = parseFloat(yAttr);
+      if (y > belowY) {
+        element.attributes.y = String(y + deltaY);
+      }
+    }
+    
+    // Check for cy attribute (circles)
+    const cyAttr = element.attributes.cy;
+    if (cyAttr) {
+      const cy = parseFloat(cyAttr);
+      if (cy > belowY) {
+        element.attributes.cy = String(cy + deltaY);
+      }
+    }
+    
+    // Check for other y-based attributes
+    const y1Attr = element.attributes.y1;
+    if (y1Attr) {
+      const y1 = parseFloat(y1Attr);
+      if (y1 > belowY) {
+        element.attributes.y1 = String(y1 + deltaY);
+      }
+    }
+    
+    const y2Attr = element.attributes.y2;
+    if (y2Attr) {
+      const y2 = parseFloat(y2Attr);
+      if (y2 > belowY) {
+        element.attributes.y2 = String(y2 + deltaY);
+      }
+    }
+    
+    // Check transform translate for elements positioned via transform
+    const transformAttr = element.attributes.transform;
+    if (transformAttr) {
+      const translateMatch = transformAttr.match(/translate\(([^,)]+),\s*([^)]+)\)/);
+      if (translateMatch) {
+        const x = parseFloat(translateMatch[1]);
+        const y = parseFloat(translateMatch[2]);
+        if (y > belowY) {
+          element.attributes.transform = transformAttr.replace(
+            /translate\([^)]+\)/,
+            `translate(${x}, ${y + deltaY})`
+          );
+        }
+      }
+    }
+    
+    // Handle path elements - check if any part of the path is below the threshold
+    if (element.tagName === 'path' && element.attributes.d) {
+      const pathData = element.attributes.d;
+      // Extract y coordinates from path data (M, L, C, Q commands)
+      const yMatches = pathData.match(/[MLCQSTAZmlcqstaz][\s,]*[^MLCQSTAZmlcqstaz]*?[\s,]+([0-9.-]+)/g);
+      if (yMatches) {
+        let shouldShift = false;
+        
+        // Check if any y coordinate in the path is below the threshold
+        for (const match of yMatches) {
+          const coords = match.match(/([0-9.-]+)/g);
+          if (coords && coords.length >= 2) {
+            const y = parseFloat(coords[1]); // y is typically the second coordinate
+            if (y > belowY) {
+              shouldShift = true;
+              break;
+            }
+          }
+        }
+        
+        if (shouldShift) {
+          // Add or update transform translate for the path
+          if (element.attributes.transform) {
+            const existingTransform = element.attributes.transform;
+            const translateMatch = existingTransform.match(/translate\(([^,)]+),\s*([^)]+)\)/);
+            if (translateMatch) {
+              const x = parseFloat(translateMatch[1]);
+              const y = parseFloat(translateMatch[2]);
+              element.attributes.transform = existingTransform.replace(
+                /translate\([^)]+\)/,
+                `translate(${x}, ${y + deltaY})`
+              );
+            } else {
+              // Add translate to existing transform
+              element.attributes.transform = `translate(0, ${deltaY}) ${existingTransform}`;
+            }
+          } else {
+            // Create new transform attribute
+            element.attributes.transform = `translate(0, ${deltaY})`;
+          }
+        }
+      }
+    }
+    
+    // Process tspan elements within text elements
+    if (element.innerHTML && element.isText) {
+      element.innerHTML = element.innerHTML.replace(
+        /<tspan([^>]*)y="([^"]*)"([^>]*)/g,
+        (match, before, yValue, after) => {
+          const y = parseFloat(yValue);
+          if (y > belowY) {
+            return `<tspan${before}y="${y + deltaY}"${after}`;
+          }
+          return match;
+        }
+      );
+    }
+    
+    // Recursively process children
+    element.children.forEach(processElement);
+  }
+  
+  processElement(svgTree);
+}
+
+/**
+ * Updates the SVG height attribute (only if it exists)
+ */
+function updateSvgHeight(svgTree: SVGElementNode, deltaHeight: number): void {
+  // Only update height if the SVG already has a height attribute
+  if (svgTree.attributes.height) {
+    const currentHeight = parseFloat(svgTree.attributes.height);
+    const newHeight = Math.max(0, currentHeight + deltaHeight);
+    svgTree.attributes.height = String(newHeight);
+  }
+}
+
+/**
  * Extracts a value from a nested object using a dot-notation path
  */
 function getValueFromPath(obj: JSONValue, path: string): JSONValue | undefined {
@@ -34,6 +209,8 @@ export function applyDataBindings({
   dataSources,
   components = [],
 }: DataBindingContext): void {
+  let totalHeightDelta = 0;
+  
   // Process each connection
   connections.forEach(connection => {
     // Find the target component
@@ -78,6 +255,9 @@ export function applyDataBindings({
             const renderingStrategy = textComponent.renderingStrategy;
 
             if (renderingStrategy?.width.type === 'constrained') {
+              // Calculate original height before modification
+              const originalHeight = calculateTextElementHeight(targetElement);
+              
               // For constrained width, break text into lines and generate tspans
               const firstTspan = tspans[0];
               const x = parseFloat(firstTspan.getAttribute('x') || '0');
@@ -152,6 +332,20 @@ export function applyDataBindings({
                 newTspan.textContent = data.text;
                 tempDiv.appendChild(newTspan);
               });
+              
+              // Update the innerHTML
+              targetElement.innerHTML = tempDiv.innerHTML;
+              
+              // Calculate new height and height delta
+              const newHeight = calculateTextElementHeight(targetElement);
+              const heightDelta = newHeight - originalHeight;
+              
+              // If height changed, shift elements below and update total height delta
+              if (heightDelta !== 0) {
+                const textBottomY = y + originalHeight;
+                shiftElementsBelow(svgTree, textBottomY, heightDelta);
+                totalHeightDelta += heightDelta;
+              }
             } else {
               // Natural strategy - use existing behavior
               tspans[0].textContent = dataString;
@@ -179,6 +373,11 @@ export function applyDataBindings({
     }
     // Color components are handled separately in applyColorComponents function
   });
+  
+  // Update the total SVG height if there were any height changes
+  if (totalHeightDelta !== 0) {
+    updateSvgHeight(svgTree, totalHeightDelta);
+  }
 }
 
 /**
