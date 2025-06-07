@@ -19,32 +19,44 @@ export function breakTextIntoLines(
   maxWidth: number,
   fontConfig: FontConfig,
 ): string[] {
-  const words = text.split(' ');
-  const lines: string[] = [];
-  let currentLine = '';
+  // First split by line breaks, then handle word wrapping for each line
+  const textLines = text.split(/\r?\n/);
+  const finalLines: string[] = [];
 
-  for (const word of words) {
-    const testLine = currentLine ? `${currentLine} ${word}` : word;
-    const testWidth = measureText(testLine, fontConfig);
+  for (const textLine of textLines) {
+    if (textLine.trim() === '') {
+      // Empty line - preserve it
+      finalLines.push('');
+      continue;
+    }
 
-    if (testWidth <= maxWidth) {
-      currentLine = testLine;
-    } else {
-      if (currentLine) {
-        lines.push(currentLine);
-        currentLine = word;
+    // Word wrap this line
+    const words = textLine.split(' ');
+    let currentLine = '';
+
+    for (const word of words) {
+      const testLine = currentLine ? `${currentLine} ${word}` : word;
+      const testWidth = measureText(testLine, fontConfig);
+
+      if (testWidth <= maxWidth) {
+        currentLine = testLine;
       } else {
-        // Single word is too long - handle overflow
-        lines.push(word);
+        if (currentLine) {
+          finalLines.push(currentLine);
+          currentLine = word;
+        } else {
+          // Single word is too long - handle overflow
+          finalLines.push(word);
+        }
       }
+    }
+
+    if (currentLine) {
+      finalLines.push(currentLine);
     }
   }
 
-  if (currentLine) {
-    lines.push(currentLine);
-  }
-
-  return lines;
+  return finalLines;
 }
 
 export function generateTspans(

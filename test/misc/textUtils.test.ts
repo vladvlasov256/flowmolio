@@ -1,4 +1,4 @@
-import { generateTspans } from '../../src/utils/textUtils';
+import { generateTspans, breakTextIntoLines } from '../../src/utils/textUtils';
 
 describe('textUtils', () => {
   describe('generateTspans', () => {
@@ -70,6 +70,67 @@ describe('textUtils', () => {
       
       expect(result).toHaveLength(1);
       expect(result[0]).toEqual({ x: 50, y: 75, text: 'Only line' });
+    });
+  });
+
+  describe('breakTextIntoLines', () => {
+    const mockFontConfig = {
+      fontFamily: 'Arial',
+      fontSize: 12,
+      fontWeight: 'normal'
+    };
+
+    it('should handle line breaks in text', () => {
+      const text = 'First line\nSecond line\nThird line';
+      const result = breakTextIntoLines(text, 200, mockFontConfig);
+      
+      expect(result).toEqual(['First line', 'Second line', 'Third line']);
+    });
+
+    it('should handle both line breaks and word wrapping', () => {
+      const text = 'Short\nThis is a very long line that should wrap\nEnd';
+      const result = breakTextIntoLines(text, 50, mockFontConfig);
+      
+      expect(result.length).toBeGreaterThan(3); // Should have more than the original 3 lines
+      expect(result[0]).toBe('Short');
+      expect(result[result.length - 1]).toBe('End');
+      // The middle line should be broken into multiple lines
+      expect(result.some(line => line.includes('This is'))).toBeTruthy();
+    });
+
+    it('should preserve empty lines', () => {
+      const text = 'First line\n\nThird line';
+      const result = breakTextIntoLines(text, 200, mockFontConfig);
+      
+      expect(result).toEqual(['First line', '', 'Third line']);
+    });
+
+    it('should handle Windows-style line breaks (\\r\\n)', () => {
+      const text = 'First line\r\nSecond line\r\nThird line';
+      const result = breakTextIntoLines(text, 200, mockFontConfig);
+      
+      expect(result).toEqual(['First line', 'Second line', 'Third line']);
+    });
+
+    it('should handle mixed line breaks and spaces', () => {
+      const text = 'Line one\nLine two with spaces\nLine three';
+      const result = breakTextIntoLines(text, 200, mockFontConfig);
+      
+      expect(result).toEqual(['Line one', 'Line two with spaces', 'Line three']);
+    });
+
+    it('should handle line break at the end', () => {
+      const text = 'First line\nSecond line\n';
+      const result = breakTextIntoLines(text, 200, mockFontConfig);
+      
+      expect(result).toEqual(['First line', 'Second line', '']);
+    });
+
+    it('should handle only line breaks', () => {
+      const text = '\n\n\n';
+      const result = breakTextIntoLines(text, 200, mockFontConfig);
+      
+      expect(result).toEqual(['', '', '', '']);
     });
   });
 });
