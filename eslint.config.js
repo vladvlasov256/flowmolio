@@ -71,6 +71,7 @@ export default [
       './rollup.config.js',
       './.prettierrc.js',
       './jest.config.js',
+      '.yalc/**'
     ]
   },
   prettierConfig

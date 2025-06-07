@@ -6,3 +6,4 @@ build
 package.json
 package-lock.json
 yarn.lock
+.yalc

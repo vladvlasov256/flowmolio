@@ -14,7 +14,7 @@ import {
  */
 export function convertBlueprintToLayout(blueprint: Blueprint): Layout {
   // Convert edges to connections
-  const connections: Connection[] = blueprint.edges.map((edge) => ({
+  const connections: Connection[] = blueprint.edges.map(edge => ({
     sourceNodeId: edge.source,
     sourceField: edge.sourceHandle || '',
     targetNodeId: edge.target,
@@ -29,16 +29,16 @@ export function convertBlueprintToLayout(blueprint: Blueprint): Layout {
           return {
             id: node.id,
             type: 'text',
-            elementId: node.data.textElementId
+            elementId: node.data.textElementId,
           } as TextLayoutComponent;
-        
+
         case 'imageLayout':
           return {
             id: node.id,
             type: 'image',
-            elementId: node.data.imageElementId
+            elementId: node.data.imageElementId,
           } as ImageLayoutComponent;
-        
+
         case 'colorNode': {
           const data = node.data;
           return {
@@ -48,12 +48,12 @@ export function convertBlueprintToLayout(blueprint: Blueprint): Layout {
             enabledRoles: {
               [ColorRole.FILL]: data.enabledRoles?.[ColorRole.FILL] ?? false,
               [ColorRole.STROKE]: data.enabledRoles?.[ColorRole.STROKE] ?? false,
-              [ColorRole.STOP_COLOR]: data.enabledRoles?.[ColorRole.STOP_COLOR] ?? false
+              [ColorRole.STOP_COLOR]: data.enabledRoles?.[ColorRole.STOP_COLOR] ?? false,
             },
-            elementIds: data.elementIds // Optional property for filtering specific elements
+            elementIds: data.elementIds, // Optional property for filtering specific elements
           } as ColorReplacementComponent;
         }
-          
+
         default:
           // This should never happen due to the filter above
           throw new Error(`Unknown node type: ${node.type}`);
@@ -63,6 +63,6 @@ export function convertBlueprintToLayout(blueprint: Blueprint): Layout {
   return {
     svg: blueprint.svg,
     connections,
-    components
+    components,
   };
 }

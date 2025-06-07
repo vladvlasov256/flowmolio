@@ -1,5 +1,5 @@
-import { Layout, Connection, Component, DataSources } from '../../types';
-import { renderFlowMolio } from '../renderFlowMolio';
+import { Layout, Connection, Component, DataSources } from '../../src/types';
+import { renderFlowMolio } from '../../src/utils/renderFlowMolio';
 
 describe('renderFlowMolio - Images', () => {
   describe('Image component data binding', () => {

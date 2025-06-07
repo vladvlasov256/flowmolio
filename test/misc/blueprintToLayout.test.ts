@@ -1,5 +1,5 @@
-import { Blueprint, ColorRole } from '../../types';
-import { convertBlueprintToLayout } from '../blueprintToLayout';
+import { Blueprint, ColorRole } from '../../src/types';
+import { convertBlueprintToLayout } from '../../src/utils/blueprintToLayout';
 
 describe('convertBlueprintToLayout', () => {
   const mockBlueprint: Blueprint = {

@@ -33,6 +33,16 @@ export interface BaseComponent {
 export interface TextLayoutComponent extends BaseComponent {
   type: 'text';
   elementId: string;
+  renderingStrategy?: {
+    width:
+      | {
+          type: 'constrained';
+          value: number;
+        }
+      | {
+          type: 'natural';
+        };
+  };
 }
 
 export interface ImageLayoutComponent extends BaseComponent {
@@ -108,10 +118,10 @@ export interface BlueprintEdge {
 export interface Blueprint {
   // SVG markup string
   svg: string;
-  
+
   // Nodes (contains all node types including UI-specific data)
   nodes: BlueprintNode[];
-  
+
   // Edges (contains connection information)
   edges: BlueprintEdge[];
 }

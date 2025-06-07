@@ -1,5 +1,5 @@
-import { Layout, Connection, Component, ColorRole, DataSources } from '../../types';
-import { renderFlowMolio } from '../renderFlowMolio';
+import { Layout, Connection, Component, ColorRole, DataSources } from '../../src/types';
+import { renderFlowMolio } from '../../src/utils/renderFlowMolio';
 
 describe('renderFlowMolio', () => {
   describe('Color component processing', () => {

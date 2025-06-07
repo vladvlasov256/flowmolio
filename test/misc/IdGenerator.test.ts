@@ -1,4 +1,4 @@
-import { IdGenerator } from '../IdGenerator';
+import { IdGenerator } from '../../src/utils/IdGenerator';
 
 describe('IdGenerator', () => {
   describe('Constructor', () => {
