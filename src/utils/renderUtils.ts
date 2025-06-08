@@ -219,7 +219,53 @@ function shiftElementsBelow(svgTree: SVGElementNode, belowY: number, deltaY: num
 }
 
 /**
- * Updates the SVG height attribute (only if it exists)
+ * Detects if an element is likely a full-height background element
+ */
+function isFullHeightElement(element: SVGElementNode, svgHeight: number): boolean {
+  const heightAttr = element.attributes.height;
+  const yAttr = element.attributes.y;
+
+  if (!heightAttr) return false;
+
+  const height = parseFloat(heightAttr);
+  const y = yAttr ? parseFloat(yAttr) : 0;
+
+  // Simple and reliable heuristics:
+
+  // 1. Height is close to or larger than SVG height (within 10% tolerance)
+  const heightRatio = height / svgHeight;
+  if (heightRatio < 0.9) return false;
+
+  // 2. Element starts at or near the top (y <= 10)
+  if (y > 10) return false;
+
+  return true;
+}
+
+/**
+ * Updates heights of full-height background elements
+ */
+function updateFullHeightElements(
+  svgTree: SVGElementNode,
+  deltaHeight: number,
+  originalSvgHeight: number,
+): void {
+  function processElement(element: SVGElementNode): void {
+    if (isFullHeightElement(element, originalSvgHeight)) {
+      const currentHeight = parseFloat(element.attributes.height);
+      const newHeight = Math.max(0, currentHeight + deltaHeight);
+      element.attributes.height = String(newHeight);
+    }
+
+    // Recursively process children
+    element.children.forEach(processElement);
+  }
+
+  processElement(svgTree);
+}
+
+/**
+ * Updates the SVG height attribute and viewBox (only if they exist)
  */
 function updateSvgHeight(svgTree: SVGElementNode, deltaHeight: number): void {
   // Only update height if the SVG already has a height attribute
@@ -227,6 +273,16 @@ function updateSvgHeight(svgTree: SVGElementNode, deltaHeight: number): void {
     const currentHeight = parseFloat(svgTree.attributes.height);
     const newHeight = Math.max(0, currentHeight + deltaHeight);
     svgTree.attributes.height = String(newHeight);
+  }
+
+  // Update viewBox if it exists
+  if (svgTree.attributes.viewBox) {
+    const viewBoxParts = svgTree.attributes.viewBox.split(/\s+/);
+    if (viewBoxParts.length === 4) {
+      const [minX, minY, width, height] = viewBoxParts.map(parseFloat);
+      const newHeight = Math.max(0, height + deltaHeight);
+      svgTree.attributes.viewBox = `${minX} ${minY} ${width} ${newHeight}`;
+    }
   }
 }
 
@@ -260,6 +316,7 @@ export function applyDataBindings({
   components = [],
 }: DataBindingContext): void {
   let totalHeightDelta = 0;
+  const originalSvgHeight = svgTree.attributes.height ? parseFloat(svgTree.attributes.height) : 0;
 
   // Process each connection
   connections.forEach(connection => {
@@ -427,8 +484,9 @@ export function applyDataBindings({
     // Color components are handled separately in applyColorComponents function
   });
 
-  // Update the total SVG height if there were any height changes
+  // Update full-height elements and SVG height if there were any height changes
   if (totalHeightDelta !== 0) {
+    updateFullHeightElements(svgTree, totalHeightDelta, originalSvgHeight);
     updateSvgHeight(svgTree, totalHeightDelta);
   }
 }

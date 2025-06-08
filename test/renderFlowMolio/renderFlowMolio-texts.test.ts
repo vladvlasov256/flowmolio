@@ -719,6 +719,67 @@ describe('renderFlowMolio - Texts', () => {
       expect(rectY).toBeGreaterThan(40);
     });
 
+    it('should update viewBox height when SVG has viewBox attribute', () => {
+      const mockSvgWithViewBox = `
+        <svg width="200" height="100" viewBox="0 0 200 100">
+          <text id="text1"><tspan x="10" y="20" font-family="Arial" font-size="12">Short</tspan></text>
+          <rect x="10" y="40" width="50" height="20" fill="blue" />
+        </svg>
+      `;
+
+      const textComponent: Component = {
+        id: 'node1',
+        type: 'text',
+        elementId: 'text1',
+        renderingStrategy: {
+          width: {
+            type: 'constrained',
+            value: 50
+          }
+        }
+      };
+
+      const connection: Connection = {
+        sourceNodeId: 'data1',
+        sourceField: 'longText',
+        targetNodeId: 'node1',
+      };
+
+      const layout: Layout = {
+        svg: mockSvgWithViewBox,
+        connections: [connection],
+        components: [textComponent],
+      };
+
+      const dataSources: DataSources = {
+        data1: { longText: 'This is a much longer text that will definitely span multiple lines and increase the viewBox height' },
+      };
+
+      const result = renderFlowMolio(layout, dataSources);
+      
+      // SVG height should be increased
+      const svgMatch = result.match(/<svg[^>]*height="([^"]*)"[^>]*>/);
+      expect(svgMatch).toBeTruthy();
+      const svgHeight = parseFloat(svgMatch![1]);
+      expect(svgHeight).toBeGreaterThan(100);
+      
+      // ViewBox height should also be increased
+      const viewBoxMatch = result.match(/<svg[^>]*viewBox="([^"]*)"[^>]*>/);
+      expect(viewBoxMatch).toBeTruthy();
+      const viewBoxParts = viewBoxMatch![1].split(/\s+/);
+      expect(viewBoxParts).toHaveLength(4);
+      const viewBoxHeight = parseFloat(viewBoxParts[3]);
+      expect(viewBoxHeight).toBeGreaterThan(100);
+      
+      // ViewBox height should be updated (increased from original 100)
+      // The exact calculation might differ due to text layout specifics
+      expect(viewBoxHeight).toBeGreaterThan(100);
+      
+      // Verify that viewBox and SVG height have both been increased
+      expect(svgHeight).toBeGreaterThan(100);
+      expect(viewBoxHeight).toBeGreaterThan(100);
+    });
+
     it('should shift path elements by adding transform attribute', () => {
       const mockSvgWithPath = `
         <svg width="200" height="100">
@@ -869,5 +930,103 @@ describe('renderFlowMolio - Texts', () => {
     expect(result).toEqual(
       `<svg width="100" height="100"><text ><tspan x="0" y="0">First</tspan></text><text ><tspan x="0" y="0">Second</tspan></text></svg>`,
     );
+  });
+
+  describe('Full-height element handling', () => {
+    it('should update heights of background elements when text expands', () => {
+      const mockSvgWithBackground = `
+        <svg width="375" height="826">
+          <rect width="375" height="826" fill="white"/>
+          <text id="text1"><tspan x="10" y="20" font-family="Arial" font-size="12">Short</tspan></text>
+        </svg>
+      `;
+
+      const textComponent: Component = {
+        id: 'node1',
+        type: 'text',
+        elementId: 'text1',
+        renderingStrategy: {
+          width: {
+            type: 'constrained',
+            value: 50
+          }
+        }
+      };
+
+      const connection: Connection = {
+        sourceNodeId: 'data1',
+        sourceField: 'longText',
+        targetNodeId: 'node1',
+      };
+
+      const layout: Layout = {
+        svg: mockSvgWithBackground,
+        connections: [connection],
+        components: [textComponent],
+      };
+
+      const dataSources: DataSources = {
+        data1: { longText: 'This is a much longer text that will definitely span multiple lines and cause height expansion' },
+      };
+
+      const result = renderFlowMolio(layout, dataSources);
+      
+      // Background rect should have increased height
+      const rectMatch = result.match(/<rect[^>]*height="([^"]*)"[^>]*>/);
+      expect(rectMatch).toBeTruthy();
+      const rectHeight = parseFloat(rectMatch![1]);
+      expect(rectHeight).toBeGreaterThan(826);
+      
+      // SVG height should also be increased
+      const svgMatch = result.match(/<svg[^>]*height="([^"]*)"[^>]*>/);
+      expect(svgMatch).toBeTruthy();
+      const svgHeight = parseFloat(svgMatch![1]);
+      expect(svgHeight).toBeGreaterThan(826);
+    });
+
+    it('should not update heights of non-background elements', () => {
+      const mockSvgWithSmallRect = `
+        <svg width="375" height="200">
+          <rect x="10" y="10" width="50" height="30" fill="blue"/>
+          <text id="text1"><tspan x="10" y="60" font-family="Arial" font-size="12">Short</tspan></text>
+        </svg>
+      `;
+
+      const textComponent: Component = {
+        id: 'node1',
+        type: 'text',
+        elementId: 'text1',
+        renderingStrategy: {
+          width: {
+            type: 'constrained',
+            value: 50
+          }
+        }
+      };
+
+      const connection: Connection = {
+        sourceNodeId: 'data1',
+        sourceField: 'longText',
+        targetNodeId: 'node1',
+      };
+
+      const layout: Layout = {
+        svg: mockSvgWithSmallRect,
+        connections: [connection],
+        components: [textComponent],
+      };
+
+      const dataSources: DataSources = {
+        data1: { longText: 'This is a much longer text that will span multiple lines' },
+      };
+
+      const result = renderFlowMolio(layout, dataSources);
+      
+      // Small rect should keep original height (not a background element)
+      const rectMatch = result.match(/<rect[^>]*height="([^"]*)"[^>]*>/);
+      expect(rectMatch).toBeTruthy();
+      const rectHeight = parseFloat(rectMatch![1]);
+      expect(rectHeight).toBe(30); // Should remain unchanged
+    });
   });
 });
