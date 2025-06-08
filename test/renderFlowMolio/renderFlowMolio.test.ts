@@ -167,6 +167,55 @@ describe('renderFlowMolio', () => {
     });
   });
 
+  describe('XML escaping', () => {
+    it('should escape XML special characters in attribute values', () => {
+      const layout: Layout = {
+        svg: '<svg><text id="test">Test</text></svg>',
+        connections: [{ sourceNodeId: 'data', sourceField: 'title', targetNodeId: 'textNode' }],
+        components: [{ id: 'textNode', type: 'text', elementId: 'test' }],
+      };
+
+      const dataSources: DataSources = {
+        data: {
+          title: 'Material & care',
+        },
+      };
+
+      const result = renderFlowMolio(layout, dataSources);
+      expect(result).toContain('Material &#38; care');
+    });
+
+    it('should escape multiple XML special characters', () => {
+      const layout: Layout = {
+        svg: '<svg><text id="test">Test</text></svg>',
+        connections: [{ sourceNodeId: 'data', sourceField: 'content', targetNodeId: 'textNode' }],
+        components: [{ id: 'textNode', type: 'text', elementId: 'test' }],
+      };
+
+      const dataSources: DataSources = {
+        data: {
+          content: 'Text with <brackets>, "quotes" & ampersands',
+        },
+      };
+
+      const result = renderFlowMolio(layout, dataSources);
+      expect(result).toContain('Text with &#60;brackets&#62;, &#34;quotes&#34; &#38; ampersands');
+    });
+
+    it('should escape special characters in ID attributes', () => {
+      const svg = '<svg><text id="Material & care">Test</text></svg>';
+      
+      const layout: Layout = {
+        svg,
+        connections: [],
+        components: [],
+      };
+
+      const result = renderFlowMolio(layout, {});
+      expect(result).toContain('id="Material &#38; care"');
+    });
+  });
+
   describe('Edge cases', () => {
     it('should handle empty data sources', () => {
       const layout: Layout = {

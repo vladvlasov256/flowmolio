@@ -1,3 +1,4 @@
+import { encode } from 'he';
 import { HTMLElement } from 'node-html-parser';
 
 import { DataBindingContext, SVGElementNode, JSONValue, TextLayoutComponent } from '../types';
@@ -6,26 +7,36 @@ import { findElementById } from './svgUtils';
 import { breakTextIntoLines, generateTspans, FontConfig } from './textUtils';
 
 /**
+ * Escapes XML special characters using he library with numeric entities
+ */
+function escapeXML(str: string): string {
+  return encode(str, {
+    useNamedReferences: false, // Forces numeric references
+    decimal: true, // Use decimal (&#38;) instead of hex (&#x26;)
+  });
+}
+
+/**
  * Calculates the height of a text element based on its tspans
  */
 function calculateTextElementHeight(element: SVGElementNode): number {
   if (!element.innerHTML) return 0;
-  
+
   const tspanMatches = element.innerHTML.match(/<tspan[^>]*y="([^"]*)"[^>]*>/g);
   if (!tspanMatches || tspanMatches.length === 0) return 0;
-  
+
   // Extract y coordinates
   const yCoordinates = tspanMatches.map(match => {
     const yMatch = match.match(/y="([^"]*)"/);
     return yMatch ? parseFloat(yMatch[1]) : 0;
   });
-  
+
   if (yCoordinates.length === 1) return 0; // Single line has no additional height
-  
+
   // Height is the difference between first and last line plus one line height
   const minY = Math.min(...yCoordinates);
   const maxY = Math.max(...yCoordinates);
-  
+
   // Calculate line height using the same logic as rendering:
   // Use difference between first and second tspan, or fallback to font size
   let lineHeight: number;
@@ -43,7 +54,7 @@ function calculateTextElementHeight(element: SVGElementNode): number {
       lineHeight = fontSize * 1.2;
     }
   }
-  
+
   return maxY - minY + lineHeight;
 }
 
@@ -60,7 +71,7 @@ function shiftElementsBelow(svgTree: SVGElementNode, belowY: number, deltaY: num
         element.attributes.y = String(y + deltaY);
       }
     }
-    
+
     // Check for cy attribute (circles)
     const cyAttr = element.attributes.cy;
     if (cyAttr) {
@@ -69,7 +80,7 @@ function shiftElementsBelow(svgTree: SVGElementNode, belowY: number, deltaY: num
         element.attributes.cy = String(cy + deltaY);
       }
     }
-    
+
     // Check for other y-based attributes
     const y1Attr = element.attributes.y1;
     if (y1Attr) {
@@ -78,7 +89,7 @@ function shiftElementsBelow(svgTree: SVGElementNode, belowY: number, deltaY: num
         element.attributes.y1 = String(y1 + deltaY);
       }
     }
-    
+
     const y2Attr = element.attributes.y2;
     if (y2Attr) {
       const y2 = parseFloat(y2Attr);
@@ -86,7 +97,7 @@ function shiftElementsBelow(svgTree: SVGElementNode, belowY: number, deltaY: num
         element.attributes.y2 = String(y2 + deltaY);
       }
     }
-    
+
     // Check transform translate for elements positioned via transform
     const transformAttr = element.attributes.transform;
     if (transformAttr) {
@@ -97,20 +108,22 @@ function shiftElementsBelow(svgTree: SVGElementNode, belowY: number, deltaY: num
         if (y > belowY) {
           element.attributes.transform = transformAttr.replace(
             /translate\([^)]+\)/,
-            `translate(${x}, ${y + deltaY})`
+            `translate(${x}, ${y + deltaY})`,
           );
         }
       }
     }
-    
+
     // Handle path elements - check if any part of the path is below the threshold
     if (element.tagName === 'path' && element.attributes.d) {
       const pathData = element.attributes.d;
       // Extract y coordinates from path data (M, L, C, Q commands)
-      const yMatches = pathData.match(/[MLCQSTAZmlcqstaz][\s,]*[^MLCQSTAZmlcqstaz]*?[\s,]+([0-9.-]+)/g);
+      const yMatches = pathData.match(
+        /[MLCQSTAZmlcqstaz][\s,]*[^MLCQSTAZmlcqstaz]*?[\s,]+([0-9.-]+)/g,
+      );
       if (yMatches) {
         let shouldShift = false;
-        
+
         // Check if any y coordinate in the path is below the threshold
         for (const match of yMatches) {
           const coords = match.match(/([0-9.-]+)/g);
@@ -122,7 +135,7 @@ function shiftElementsBelow(svgTree: SVGElementNode, belowY: number, deltaY: num
             }
           }
         }
-        
+
         if (shouldShift) {
           // Add or update transform translate for the path
           if (element.attributes.transform) {
@@ -133,7 +146,7 @@ function shiftElementsBelow(svgTree: SVGElementNode, belowY: number, deltaY: num
               const y = parseFloat(translateMatch[2]);
               element.attributes.transform = existingTransform.replace(
                 /translate\([^)]+\)/,
-                `translate(${x}, ${y + deltaY})`
+                `translate(${x}, ${y + deltaY})`,
               );
             } else {
               // Add translate to existing transform
@@ -146,7 +159,7 @@ function shiftElementsBelow(svgTree: SVGElementNode, belowY: number, deltaY: num
         }
       }
     }
-    
+
     // Process tspan elements within text elements
     if (element.innerHTML && element.isText) {
       element.innerHTML = element.innerHTML.replace(
@@ -157,14 +170,14 @@ function shiftElementsBelow(svgTree: SVGElementNode, belowY: number, deltaY: num
             return `<tspan${before}y="${y + deltaY}"${after}`;
           }
           return match;
-        }
+        },
       );
     }
-    
+
     // Recursively process children
     element.children.forEach(processElement);
   }
-  
+
   processElement(svgTree);
 }
 
@@ -210,7 +223,7 @@ export function applyDataBindings({
   components = [],
 }: DataBindingContext): void {
   let totalHeightDelta = 0;
-  
+
   // Process each connection
   connections.forEach(connection => {
     // Find the target component
@@ -257,7 +270,7 @@ export function applyDataBindings({
             if (renderingStrategy?.width.type === 'constrained') {
               // Calculate original height before modification
               const originalHeight = calculateTextElementHeight(targetElement);
-              
+
               // For constrained width, break text into lines and generate tspans
               const firstTspan = tspans[0];
               const x = parseFloat(firstTspan.getAttribute('x') || '0');
@@ -332,14 +345,14 @@ export function applyDataBindings({
                 newTspan.textContent = data.text;
                 tempDiv.appendChild(newTspan);
               });
-              
+
               // Update the innerHTML
               targetElement.innerHTML = tempDiv.innerHTML;
-              
+
               // Calculate new height and height delta
               const newHeight = calculateTextElementHeight(targetElement);
               const heightDelta = newHeight - originalHeight;
-              
+
               // If height changed, shift elements below and update total height delta
               if (heightDelta !== 0) {
                 const textBottomY = y + originalHeight;
@@ -359,7 +372,7 @@ export function applyDataBindings({
             targetElement.innerHTML = tempDiv.innerHTML;
           } else {
             // No tspans found, just replace the entire innerHTML
-            targetElement.innerHTML = dataString;
+            targetElement.innerHTML = escapeXML(dataString);
           }
         }
 
@@ -373,7 +386,7 @@ export function applyDataBindings({
     }
     // Color components are handled separately in applyColorComponents function
   });
-  
+
   // Update the total SVG height if there were any height changes
   if (totalHeightDelta !== 0) {
     updateSvgHeight(svgTree, totalHeightDelta);
@@ -386,7 +399,7 @@ export function applyDataBindings({
 export function serializeSVG(svgTree: SVGElementNode): string {
   // Create a simple SVG serialization
   const attributes = Object.entries(svgTree.attributes)
-    .map(([key, value]) => `${key}="${value}"`)
+    .map(([key, value]) => `${key}="${escapeXML(value)}"`)
     .join(' ');
 
   let result = `<${svgTree.tagName} ${attributes}`;
@@ -404,7 +417,7 @@ export function serializeSVG(svgTree: SVGElementNode): string {
   }
   // Add text content if it exists and there's no innerHTML
   else if (svgTree.textContent) {
-    result += svgTree.textContent;
+    result += escapeXML(svgTree.textContent);
   }
 
   // Add children recursively (for non-text elements, or text elements without innerHTML)
