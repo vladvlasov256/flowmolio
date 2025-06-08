@@ -30,6 +30,7 @@ export function convertBlueprintToLayout(blueprint: Blueprint): Layout {
             id: node.id,
             type: 'text',
             elementId: node.data.textElementId,
+            renderingStrategy: node.data.renderingStrategy,
           } as TextLayoutComponent;
 
         case 'imageLayout':

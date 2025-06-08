@@ -10,7 +10,12 @@ describe('convertBlueprintToLayout', () => {
         type: 'textLayout',
         position: { x: 100, y: 100 },
         data: {
-          textElementId: 'title'
+          textElementId: 'title',
+          renderingStrategy: {
+            width: {
+              type: 'natural'
+            }
+          }
         }
       },
       {
@@ -91,7 +96,12 @@ describe('convertBlueprintToLayout', () => {
       {
         id: 'text-node-1',
         type: 'text',
-        elementId: 'title'
+        elementId: 'title',
+        renderingStrategy: {
+          width: {
+            type: 'natural'
+          }
+        }
       },
       {
         id: 'image-node-1',
@@ -127,7 +137,12 @@ describe('convertBlueprintToLayout', () => {
           type: 'textLayout',
           position: { x: 100, y: 100 },
           data: {
-            textElementId: 'title'
+            textElementId: 'title',
+            renderingStrategy: {
+              width: {
+                type: 'natural'
+              }
+            }
           }
         },
         {
@@ -146,7 +161,12 @@ describe('convertBlueprintToLayout', () => {
     expect(layout.components[0]).toEqual({
       id: 'text-node-1',
       type: 'text',
-      elementId: 'title'
+      elementId: 'title',
+      renderingStrategy: {
+        width: {
+          type: 'natural'
+        }
+      }
     });
   });
 
@@ -159,7 +179,12 @@ describe('convertBlueprintToLayout', () => {
           type: 'textLayout',
           position: { x: 100, y: 100 },
           data: {
-            textElementId: 'title'
+            textElementId: 'title',
+            renderingStrategy: {
+              width: {
+                type: 'natural'
+              }
+            }
           }
         }
       ],
@@ -221,5 +246,107 @@ describe('convertBlueprintToLayout', () => {
     expect(layout.svg).toBe('<svg></svg>');
     expect(layout.connections).toEqual([]);
     expect(layout.components).toEqual([]);
+  });
+
+  it('should include renderingStrategy in text layout components', () => {
+    const blueprint: Blueprint = {
+      svg: '<svg><text id="title">Hello</text></svg>',
+      nodes: [
+        {
+          id: 'text-node-1',
+          type: 'textLayout',
+          position: { x: 100, y: 100 },
+          data: {
+            textElementId: 'title',
+            renderingStrategy: {
+              width: {
+                type: 'constrained',
+                value: 200
+              }
+            }
+          }
+        }
+      ],
+      edges: []
+    };
+
+    const layout = convertBlueprintToLayout(blueprint);
+
+    expect(layout.components).toHaveLength(1);
+    expect(layout.components[0]).toEqual({
+      id: 'text-node-1',
+      type: 'text',
+      elementId: 'title',
+      renderingStrategy: {
+        width: {
+          type: 'constrained',
+          value: 200
+        }
+      }
+    });
+  });
+
+  it('should handle text layout components with natural rendering strategy', () => {
+    const blueprint: Blueprint = {
+      svg: '<svg><text id="title">Hello</text></svg>',
+      nodes: [
+        {
+          id: 'text-node-1',
+          type: 'textLayout',
+          position: { x: 100, y: 100 },
+          data: {
+            textElementId: 'title',
+            renderingStrategy: {
+              width: {
+                type: 'natural'
+              }
+            }
+          }
+        }
+      ],
+      edges: []
+    };
+
+    const layout = convertBlueprintToLayout(blueprint);
+
+    expect(layout.components).toHaveLength(1);
+    expect(layout.components[0]).toEqual({
+      id: 'text-node-1',
+      type: 'text',
+      elementId: 'title',
+      renderingStrategy: {
+        width: {
+          type: 'natural'
+        }
+      }
+    });
+  });
+
+  it('should handle text layout components without renderingStrategy', () => {
+    const blueprint: Blueprint = {
+      svg: '<svg><text id="title">Hello</text></svg>',
+      nodes: [
+        {
+          id: 'text-node-1',
+          type: 'textLayout',
+          position: { x: 100, y: 100 },
+          data: {
+            textElementId: 'title'
+            // No renderingStrategy
+          }
+        }
+      ],
+      edges: []
+    };
+
+    const layout = convertBlueprintToLayout(blueprint);
+
+    expect(layout.components).toHaveLength(1);
+    expect(layout.components[0]).toEqual({
+      id: 'text-node-1',
+      type: 'text',
+      elementId: 'title',
+      renderingStrategy: undefined
+    });
   });
 });
