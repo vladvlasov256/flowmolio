@@ -19,11 +19,14 @@ function escapeXML(str: string): string {
 /**
  * Calculates the height of a text element based on its tspans
  */
-function calculateTextElementHeight(element: SVGElementNode): number {
-  if (!element.innerHTML) return 0;
+function calculateTextElementHeight(
+  element: SVGElementNode,
+  oldLineHeight: number = 0,
+): { height: number; lineHeight: number } {
+  if (!element.innerHTML) return { height: 0, lineHeight: oldLineHeight };
 
   const tspanMatches = element.innerHTML.match(/<tspan[^>]*y="([^"]*)"[^>]*>/g);
-  if (!tspanMatches || tspanMatches.length === 0) return 0;
+  if (!tspanMatches || tspanMatches.length === 0) return { height: 0, lineHeight: oldLineHeight };
 
   // Extract y coordinates
   const yCoordinates = tspanMatches.map(match => {
@@ -31,67 +34,99 @@ function calculateTextElementHeight(element: SVGElementNode): number {
     return yMatch ? parseFloat(yMatch[1]) : 0;
   });
 
-  if (yCoordinates.length === 1) return 0; // Single line has no additional height
+  let estimatedLineHeight = oldLineHeight;
+  if (oldLineHeight === 0) {
+    const dyMatch = element.innerHTML.match(/dy="([^"]*)"/);
+    if (dyMatch) {
+      estimatedLineHeight = parseFloat(dyMatch[1]);
+    } else {
+      const fontSizeMatch = element.innerHTML.match(/font-size="([^"]*)"/);
+      const fontSize = fontSizeMatch ? parseFloat(fontSizeMatch[1]) : 12;
+      estimatedLineHeight = fontSize * 1.2;
+    }
+  }
+
+  // Single line has no additional height
+  if (yCoordinates.length === 1) return { height: oldLineHeight, lineHeight: estimatedLineHeight };
 
   // Height is the difference between first and last line plus one line height
   const minY = Math.min(...yCoordinates);
   const maxY = Math.max(...yCoordinates);
 
-  // Calculate line height using the same logic as rendering:
-  // Use difference between first and second tspan, or fallback to font size
-  let lineHeight: number;
-  if (yCoordinates.length >= 2) {
-    // Use the difference between first and second tspan y-coordinates
-    lineHeight = Math.abs(yCoordinates[1] - yCoordinates[0]);
-  } else {
-    // Fallback to dy attribute or font size estimate
-    const dyMatch = element.innerHTML.match(/dy="([^"]*)"/);
-    if (dyMatch) {
-      lineHeight = parseFloat(dyMatch[1]);
+  let lineHeight = oldLineHeight;
+  if (oldLineHeight === 0) {
+    // Calculate line height using the same logic as rendering:
+    // Use difference between first and second tspan, or fallback to font size
+    if (yCoordinates.length >= 2) {
+      // Use the difference between first and second tspan y-coordinates
+      lineHeight = Math.abs(yCoordinates[1] - yCoordinates[0]);
     } else {
-      const fontSizeMatch = element.innerHTML.match(/font-size="([^"]*)"/);
-      const fontSize = fontSizeMatch ? parseFloat(fontSizeMatch[1]) : 12;
-      lineHeight = fontSize * 1.2;
+      lineHeight = estimatedLineHeight; // Fallback to estimated line height
     }
   }
 
-  return maxY - minY + lineHeight;
+  return { height: maxY - minY + lineHeight, lineHeight };
 }
 
 /**
- * Shifts elements that are positioned below the given y-coordinate
+ * Shifts elements whose bottom is below the given y-coordinate
  */
 function shiftElementsBelow(svgTree: SVGElementNode, belowY: number, deltaY: number): void {
   function processElement(element: SVGElementNode): void {
-    // Check if element has a y coordinate and if it's below the threshold
+    // Check if element has a y coordinate and calculate its bottom
     const yAttr = element.attributes.y;
     if (yAttr) {
       const y = parseFloat(yAttr);
-      if (y > belowY) {
+      const heightAttr = element.attributes.height;
+      let elementBottom = y;
+
+      if (heightAttr) {
+        // Element has explicit height
+        elementBottom = y + parseFloat(heightAttr);
+      } else {
+        // For elements without height, use the y coordinate as approximation
+        elementBottom = y;
+      }
+
+      if (elementBottom > belowY) {
         element.attributes.y = String(y + deltaY);
       }
     }
 
-    // Check for cy attribute (circles)
+    // Check for cy attribute (circles) - bottom is cy + r
     const cyAttr = element.attributes.cy;
     if (cyAttr) {
       const cy = parseFloat(cyAttr);
-      if (cy > belowY) {
+      const rAttr = element.attributes.r;
+      let elementBottom = cy;
+
+      if (rAttr) {
+        elementBottom = cy + parseFloat(rAttr);
+      }
+
+      if (elementBottom > belowY) {
         element.attributes.cy = String(cy + deltaY);
       }
     }
 
-    // Check for other y-based attributes
+    // Check for other y-based attributes (lines) - use the lower y coordinate as bottom
     const y1Attr = element.attributes.y1;
-    if (y1Attr) {
+    const y2Attr = element.attributes.y2;
+    if (y1Attr && y2Attr) {
+      const y1 = parseFloat(y1Attr);
+      const y2 = parseFloat(y2Attr);
+      const elementBottom = Math.max(y1, y2);
+
+      if (elementBottom > belowY) {
+        element.attributes.y1 = String(y1 + deltaY);
+        element.attributes.y2 = String(y2 + deltaY);
+      }
+    } else if (y1Attr) {
       const y1 = parseFloat(y1Attr);
       if (y1 > belowY) {
         element.attributes.y1 = String(y1 + deltaY);
       }
-    }
-
-    const y2Attr = element.attributes.y2;
-    if (y2Attr) {
+    } else if (y2Attr) {
       const y2 = parseFloat(y2Attr);
       if (y2 > belowY) {
         element.attributes.y2 = String(y2 + deltaY);
@@ -99,6 +134,7 @@ function shiftElementsBelow(svgTree: SVGElementNode, belowY: number, deltaY: num
     }
 
     // Check transform translate for elements positioned via transform
+    // Note: For transformed elements, we check the y coordinate since height is not easily determinable
     const transformAttr = element.attributes.transform;
     if (transformAttr) {
       const translateMatch = transformAttr.match(/translate\(([^,)]+),\s*([^)]+)\)/);
@@ -114,7 +150,8 @@ function shiftElementsBelow(svgTree: SVGElementNode, belowY: number, deltaY: num
       }
     }
 
-    // Handle path elements - check if any part of the path is below the threshold
+    // Handle path elements - check if any y coordinate in the path is below the threshold
+    // Note: This is an approximation since calculating path bounds is complex
     if (element.tagName === 'path' && element.attributes.d) {
       const pathData = element.attributes.d;
       // Extract y coordinates from path data (M, L, C, Q commands)
@@ -269,7 +306,8 @@ export function applyDataBindings({
 
             if (renderingStrategy?.width.type === 'constrained') {
               // Calculate original height before modification
-              const originalHeight = calculateTextElementHeight(targetElement);
+              const { height: originalHeight, lineHeight: oldLineHeight } =
+                calculateTextElementHeight(targetElement);
 
               // For constrained width, break text into lines and generate tspans
               const firstTspan = tspans[0];
@@ -350,13 +388,15 @@ export function applyDataBindings({
               targetElement.innerHTML = tempDiv.innerHTML;
 
               // Calculate new height and height delta
-              const newHeight = calculateTextElementHeight(targetElement);
+              const { height: newHeight } = calculateTextElementHeight(
+                targetElement,
+                oldLineHeight,
+              );
               const heightDelta = newHeight - originalHeight;
 
               // If height changed, shift elements below and update total height delta
               if (heightDelta !== 0) {
-                const textBottomY = y + originalHeight;
-                shiftElementsBelow(svgTree, textBottomY, heightDelta);
+                shiftElementsBelow(svgTree, y, heightDelta);
                 totalHeightDelta += heightDelta;
               }
             } else {
