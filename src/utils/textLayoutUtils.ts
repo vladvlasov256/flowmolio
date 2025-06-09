@@ -18,27 +18,27 @@ export type Lines = Line[];
  */
 export function extractLinesFromTspans(tspanStrings: string[]): Lines {
   const lineMap = new Map<number, number>(); // y -> leftmost x
-  
+
   tspanStrings.forEach(tspanString => {
     const yMatch = tspanString.match(/y="([^"]*)"/);
     const xMatch = tspanString.match(/x="([^"]*)"/);
-    
+
     if (yMatch) {
       const y = parseFloat(yMatch[1]);
       const x = xMatch ? parseFloat(xMatch[1]) : 0;
-      
+
       // Keep track of the leftmost x position for each y
       if (!lineMap.has(y) || x < lineMap.get(y)!) {
         lineMap.set(y, x);
       }
     }
   });
-  
+
   // Convert to Lines array and sort by y
   const lines: Lines = Array.from(lineMap.entries())
     .map(([y, x]) => ({ y, x }))
     .sort((a, b) => a.y - b.y);
-    
+
   return lines;
 }
 
@@ -47,10 +47,10 @@ export function extractLinesFromTspans(tspanStrings: string[]): Lines {
  */
 export function extractLinesFromElement(element: SVGElementNode): Lines {
   if (!element.innerHTML) return [];
-  
+
   const tspanMatches = element.innerHTML.match(/<tspan[^>]*y="([^"]*)"[^>]*>/g);
   if (!tspanMatches) return [];
-  
+
   return extractLinesFromTspans(Array.from(tspanMatches));
 }
 
@@ -274,12 +274,12 @@ function isFullHeightElement(element: SVGElementNode, svgHeight: number): boolea
 
 /**
  * Updates heights of full-height background elements and SVG dimensions
- * 
+ *
  * When text content expands and increases the overall document height, we need to:
  * 1. Expand background elements (like full-height rectangles) to maintain visual consistency
  * 2. Update the SVG container dimensions to accommodate the new content
  * 3. Update the viewBox to ensure proper coordinate mapping
- * 
+ *
  * This prevents backgrounds from being too short and content from being clipped.
  */
 export function updateFullHeightElements(

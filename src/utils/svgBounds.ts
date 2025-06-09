@@ -27,7 +27,7 @@ export interface HeightUpdateContext {
  */
 function calculateTextBounds(element: SVGElementNode): ElementBounds {
   const lines = extractLinesFromElement(element);
-  
+
   if (lines.length === 0) {
     return { x: 0, y: 0, width: 0, height: 0 };
   }
@@ -72,7 +72,7 @@ function calculateTextBounds(element: SVGElementNode): ElementBounds {
     x: minX,
     y: minY,
     width: maxWidth,
-    height: height
+    height: height,
   };
 }
 
@@ -100,7 +100,7 @@ function calculateCircleBounds(element: SVGElementNode): ElementBounds {
     x: cx - r,
     y: cy - r,
     width: r * 2,
-    height: r * 2
+    height: r * 2,
   };
 }
 
@@ -117,7 +117,7 @@ function calculateEllipseBounds(element: SVGElementNode): ElementBounds {
     x: cx - rx,
     y: cy - ry,
     width: rx * 2,
-    height: ry * 2
+    height: ry * 2,
   };
 }
 
@@ -147,7 +147,7 @@ function calculateGroupBounds(element: SVGElementNode): ElementBounds {
   }
 
   const childBounds = element.children.map(child => calculateElementBounds(child));
-  
+
   // Find the overall bounding box
   const minX = Math.min(...childBounds.map(b => b.x));
   const minY = Math.min(...childBounds.map(b => b.y));
@@ -158,7 +158,7 @@ function calculateGroupBounds(element: SVGElementNode): ElementBounds {
     x: minX,
     y: minY,
     width: maxX - minX,
-    height: maxY - minY
+    height: maxY - minY,
   };
 }
 
@@ -179,7 +179,7 @@ function calculatePathBounds(element: SVGElementNode): ElementBounds {
   }
 
   const coords = coordMatches.map(coord => parseFloat(coord));
-  
+
   // Separate x and y coordinates (assuming they alternate)
   const xCoords = coords.filter((_, index) => index % 2 === 0);
   const yCoords = coords.filter((_, index) => index % 2 === 1);
@@ -197,7 +197,7 @@ function calculatePathBounds(element: SVGElementNode): ElementBounds {
     x: minX,
     y: minY,
     width: maxX - minX,
-    height: maxY - minY
+    height: maxY - minY,
   };
 }
 
@@ -208,25 +208,25 @@ export function calculateElementBounds(element: SVGElementNode): ElementBounds {
   switch (element.tagName.toLowerCase()) {
     case 'text':
       return calculateTextBounds(element);
-    
+
     case 'rect':
       return calculateRectBounds(element);
-    
+
     case 'circle':
       return calculateCircleBounds(element);
-    
+
     case 'ellipse':
       return calculateEllipseBounds(element);
-    
+
     case 'line':
       return calculateLineBounds(element);
-    
+
     case 'g':
       return calculateGroupBounds(element);
-    
+
     case 'path':
       return calculatePathBounds(element);
-    
+
     case 'svg': {
       // For SVG root, use viewBox or width/height
       const viewBox = element.attributes.viewBox;
@@ -237,7 +237,7 @@ export function calculateElementBounds(element: SVGElementNode): ElementBounds {
             x: parseFloat(parts[0]),
             y: parseFloat(parts[1]),
             width: parseFloat(parts[2]),
-            height: parseFloat(parts[3])
+            height: parseFloat(parts[3]),
           };
         }
       }
@@ -246,10 +246,10 @@ export function calculateElementBounds(element: SVGElementNode): ElementBounds {
         x: 0,
         y: 0,
         width: parseFloat(element.attributes.width || '0'),
-        height: parseFloat(element.attributes.height || '0')
+        height: parseFloat(element.attributes.height || '0'),
       };
     }
-    
+
     default:
       // For unknown elements, return zero bounds
       // Note: In production, you might want to use a proper logging system
@@ -262,7 +262,7 @@ export function calculateElementBounds(element: SVGElementNode): ElementBounds {
  */
 export function isFullHeightSibling(element: SVGElementNode, parentBounds: ElementBounds): boolean {
   const elementBounds = calculateElementBounds(element);
-  
+
   // Element must have height attribute or be a rect/path
   if (!['rect', 'path', 'ellipse', 'circle'].includes(element.tagName.toLowerCase())) {
     return false;
@@ -285,10 +285,10 @@ export function isFullHeightSibling(element: SVGElementNode, parentBounds: Eleme
 export function updateFullHeightSiblings(
   containerElement: SVGElementNode,
   deltaHeight: number,
-  svgRoot?: SVGElementNode
+  svgRoot?: SVGElementNode,
 ): void {
   const containerBounds = calculateElementBounds(containerElement);
-  
+
   containerElement.children.forEach(child => {
     if (isFullHeightSibling(child, containerBounds)) {
       // Update the element's height based on its type
@@ -301,7 +301,7 @@ export function updateFullHeightSiblings(
           }
           break;
         }
-        
+
         case 'ellipse': {
           if (child.attributes.ry) {
             const currentRy = parseFloat(child.attributes.ry);
@@ -310,7 +310,7 @@ export function updateFullHeightSiblings(
           }
           break;
         }
-        
+
         case 'circle': {
           if (child.attributes.r) {
             const currentR = parseFloat(child.attributes.r);
@@ -319,13 +319,13 @@ export function updateFullHeightSiblings(
           }
           break;
         }
-        
+
         // For paths and other complex shapes, we'd need more sophisticated logic
         // but for Figma exports, rects are most common for backgrounds
       }
     }
   });
-  
+
   // Also update clipPath defs that are referenced by elements in this container
   // This ensures clipPaths expand when their corresponding containers expand
   if (svgRoot) {
@@ -340,11 +340,11 @@ function updateReferencedClipPaths(
   svgTree: SVGElementNode,
   containerElement: SVGElementNode,
   containerBounds: ElementBounds,
-  deltaHeight: number
+  deltaHeight: number,
 ): void {
   // Find all clip-path references in the container
   const clipPathIds = new Set<string>();
-  
+
   function collectClipPathReferences(element: SVGElementNode): void {
     const clipPath = element.attributes['clip-path'];
     if (clipPath) {
@@ -354,15 +354,15 @@ function updateReferencedClipPaths(
         clipPathIds.add(match[1]);
       }
     }
-    
+
     // Recursively check children
     element.children.forEach(collectClipPathReferences);
   }
-  
+
   collectClipPathReferences(containerElement);
-  
+
   if (clipPathIds.size === 0) return;
-  
+
   // Find the defs element in the SVG tree
   function findDefs(element: SVGElementNode): SVGElementNode | null {
     for (const child of element.children) {
@@ -402,21 +402,24 @@ function updateReferencedClipPaths(
 /**
  * Finds the parent element of a given element in the SVG tree
  */
-function findParentElement(svgTree: SVGElementNode, targetElement: SVGElementNode): SVGElementNode | null {
+function findParentElement(
+  svgTree: SVGElementNode,
+  targetElement: SVGElementNode,
+): SVGElementNode | null {
   function searchInElement(element: SVGElementNode): SVGElementNode | null {
     // Check if any child is our target
     for (const child of element.children) {
       if (child === targetElement) {
         return element;
       }
-      
+
       // Recursively search in children
       const found = searchInElement(child);
       if (found) return found;
     }
     return null;
   }
-  
+
   return searchInElement(svgTree);
 }
 
@@ -426,22 +429,22 @@ function findParentElement(svgTree: SVGElementNode, targetElement: SVGElementNod
 function calculateParentHeightChange(
   parentElement: SVGElementNode,
   childElement: SVGElementNode,
-  childDeltaHeight: number
+  childDeltaHeight: number,
 ): number {
   const parentBounds = calculateElementBounds(parentElement);
   const childBounds = calculateElementBounds(childElement);
-  
+
   // If child is at the bottom of parent, parent height should increase
   const childBottomY = childBounds.y + childBounds.height;
   const parentBottomY = parentBounds.y + parentBounds.height;
-  
+
   // Only increase parent height if child expansion goes beyond parent's current bottom
   const childNewBottomY = childBottomY + childDeltaHeight;
-  
+
   if (childNewBottomY > parentBottomY) {
     return childNewBottomY - parentBottomY;
   }
-  
+
   return 0;
 }
 
@@ -451,20 +454,20 @@ function calculateParentHeightChange(
 export function updateElementAndAncestors(
   svgTree: SVGElementNode,
   changedElement: SVGElementNode,
-  deltaHeight: number
+  deltaHeight: number,
 ): void {
   if (deltaHeight === 0) return;
-  
+
   // Find the parent of the changed element
   const parentElement = findParentElement(svgTree, changedElement);
   if (!parentElement) {
     // This shouldn't happen unless changedElement is not in the tree
     return;
   }
-  
+
   // Update full-height siblings in the parent container
   updateFullHeightSiblings(parentElement, deltaHeight, svgTree);
-  
+
   // If parent is the SVG root, also update SVG dimensions
   if (parentElement.tagName === 'svg') {
     // Update SVG height
@@ -473,7 +476,7 @@ export function updateElementAndAncestors(
       const newHeight = Math.max(0, currentHeight + deltaHeight);
       parentElement.attributes.height = String(newHeight);
     }
-    
+
     // Update viewBox
     if (parentElement.attributes.viewBox) {
       const viewBoxParts = parentElement.attributes.viewBox.split(/\s+/);
@@ -483,17 +486,17 @@ export function updateElementAndAncestors(
         parentElement.attributes.viewBox = `${minX} ${minY} ${width} ${newHeight}`;
       }
     }
-    
+
     return;
   }
-  
+
   // Calculate how much the parent's height should change
   const parentDeltaHeight = calculateParentHeightChange(parentElement, changedElement, deltaHeight);
-  
+
   // If parent height doesn't need to change, we might still need to propagate
   // the original deltaHeight up to update siblings at higher levels
   const propagationDelta = parentDeltaHeight > 0 ? parentDeltaHeight : deltaHeight;
-  
+
   // Recursively update ancestors
   updateElementAndAncestors(svgTree, parentElement, propagationDelta);
 }
@@ -505,7 +508,7 @@ export function updateElementAndAncestors(
 export function handleTextHeightChange(
   svgTree: SVGElementNode,
   textElement: SVGElementNode,
-  deltaHeight: number
+  deltaHeight: number,
 ): void {
   // Start the recursive update from the text element
   updateElementAndAncestors(svgTree, textElement, deltaHeight);

@@ -58,7 +58,6 @@ function applyTextDataBindings({
   dataSources,
   components = [],
 }: DataBindingContext): void {
-
   // Process each connection for text components only
   connections.forEach(connection => {
     // Find the target component
