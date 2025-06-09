@@ -1,7 +1,61 @@
 import { SVGElementNode } from '../types';
 
 /**
- * Calculates the height of a text element based on its tspans
+ * Represents a line in text layout with its position
+ */
+export interface Line {
+  y: number;
+  x: number; // leftmost x position on this line
+}
+
+/**
+ * Array of lines, sorted by y-coordinate with unique y-values
+ */
+export type Lines = Line[];
+
+/**
+ * Extracts lines from tspan elements, handling multiple tspans on the same line
+ */
+export function extractLinesFromTspans(tspanStrings: string[]): Lines {
+  const lineMap = new Map<number, number>(); // y -> leftmost x
+  
+  tspanStrings.forEach(tspanString => {
+    const yMatch = tspanString.match(/y="([^"]*)"/);
+    const xMatch = tspanString.match(/x="([^"]*)"/);
+    
+    if (yMatch) {
+      const y = parseFloat(yMatch[1]);
+      const x = xMatch ? parseFloat(xMatch[1]) : 0;
+      
+      // Keep track of the leftmost x position for each y
+      if (!lineMap.has(y) || x < lineMap.get(y)!) {
+        lineMap.set(y, x);
+      }
+    }
+  });
+  
+  // Convert to Lines array and sort by y
+  const lines: Lines = Array.from(lineMap.entries())
+    .map(([y, x]) => ({ y, x }))
+    .sort((a, b) => a.y - b.y);
+    
+  return lines;
+}
+
+/**
+ * Extracts lines from a text element's innerHTML
+ */
+export function extractLinesFromElement(element: SVGElementNode): Lines {
+  if (!element.innerHTML) return [];
+  
+  const tspanMatches = element.innerHTML.match(/<tspan[^>]*y="([^"]*)"[^>]*>/g);
+  if (!tspanMatches) return [];
+  
+  return extractLinesFromTspans(Array.from(tspanMatches));
+}
+
+/**
+ * Calculates the height of a text element based on its lines
  */
 export function calculateTextElementHeight(
   element: SVGElementNode,
@@ -9,14 +63,8 @@ export function calculateTextElementHeight(
 ): { height: number; lineHeight: number } {
   if (!element.innerHTML) return { height: 0, lineHeight: oldLineHeight };
 
-  const tspanMatches = element.innerHTML.match(/<tspan[^>]*y="([^"]*)"[^>]*>/g);
-  if (!tspanMatches || tspanMatches.length === 0) return { height: 0, lineHeight: oldLineHeight };
-
-  // Extract y coordinates
-  const yCoordinates = tspanMatches.map(match => {
-    const yMatch = match.match(/y="([^"]*)"/);
-    return yMatch ? parseFloat(yMatch[1]) : 0;
-  });
+  const lines = extractLinesFromElement(element);
+  if (lines.length === 0) return { height: 0, lineHeight: oldLineHeight };
 
   let estimatedLineHeight = oldLineHeight;
   if (oldLineHeight === 0) {
@@ -31,19 +79,17 @@ export function calculateTextElementHeight(
   }
 
   // Single line has no additional height
-  if (yCoordinates.length === 1) return { height: oldLineHeight, lineHeight: estimatedLineHeight };
+  if (lines.length === 1) return { height: oldLineHeight, lineHeight: estimatedLineHeight };
 
   // Height is the difference between first and last line plus one line height
-  const minY = Math.min(...yCoordinates);
-  const maxY = Math.max(...yCoordinates);
+  const minY = lines[0].y; // lines are sorted, so first is minimum
+  const maxY = lines[lines.length - 1].y; // last is maximum
 
   let lineHeight = oldLineHeight;
   if (oldLineHeight === 0) {
-    // Calculate line height using the same logic as rendering:
-    // Use difference between first and second tspan, or fallback to font size
-    if (yCoordinates.length >= 2) {
-      // Use the difference between first and second tspan y-coordinates
-      lineHeight = Math.abs(yCoordinates[1] - yCoordinates[0]);
+    // Calculate line height using the difference between first and second line
+    if (lines.length >= 2) {
+      lineHeight = Math.abs(lines[1].y - lines[0].y);
     } else {
       lineHeight = estimatedLineHeight; // Fallback to estimated line height
     }

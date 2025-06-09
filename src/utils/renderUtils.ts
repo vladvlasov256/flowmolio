@@ -15,6 +15,7 @@ import {
   calculateTextElementHeight,
   shiftElementsBelow,
   updateFullHeightElements,
+  extractLinesFromElement,
 } from './textLayoutUtils';
 import { breakTextIntoLines, generateTspans, FontConfig } from './textUtils';
 
@@ -130,13 +131,12 @@ function applyTextDataBindings({
           // Break text into lines based on width constraint
           const lines = breakTextIntoLines(dataString, renderingStrategy.width.value, fontConfig);
 
-          // Calculate line height from existing tspans or fallback to dy/font size estimate
+          // Calculate line height from existing lines or fallback to dy/font size estimate
           let lineHeight: number;
-          if (tspans.length >= 2) {
-            // Use the difference between first and second tspan y-coordinates
-            const firstY = parseFloat(tspans[0].getAttribute('y') || '0');
-            const secondY = parseFloat(tspans[1].getAttribute('y') || '0');
-            lineHeight = Math.abs(secondY - firstY);
+          const existingLines = extractLinesFromElement(targetElement);
+          if (existingLines.length >= 2) {
+            // Use the difference between first and second line y-coordinates
+            lineHeight = Math.abs(existingLines[1].y - existingLines[0].y);
           } else {
             // Fallback to dy attribute or font size estimate
             lineHeight = parseFloat(firstTspan.getAttribute('dy') || String(fontSize * 1.2));
