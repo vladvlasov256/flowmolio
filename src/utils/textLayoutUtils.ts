@@ -167,7 +167,7 @@ export function shiftElementsBelow(svgTree: SVGElementNode, belowY: number, delt
     // Note: For transformed elements, we check the y coordinate since height is not easily determinable
     const transformAttr = element.attributes.transform;
     if (transformAttr) {
-      const translateMatch = transformAttr.match(/translate\(([^,)]+),\s*([^)]+)\)/);
+      const translateMatch = transformAttr.match(/translate\(([^,)\s]+)[\s,]+([^)]+)\)/);
       if (translateMatch) {
         const x = parseFloat(translateMatch[1]);
         const y = parseFloat(translateMatch[2]);
@@ -207,7 +207,7 @@ export function shiftElementsBelow(svgTree: SVGElementNode, belowY: number, delt
           // Add or update transform translate for the path
           if (element.attributes.transform) {
             const existingTransform = element.attributes.transform;
-            const translateMatch = existingTransform.match(/translate\(([^,)]+),\s*([^)]+)\)/);
+            const translateMatch = existingTransform.match(/translate\(([^,)\s]+)[\s,]+([^)]+)\)/);
             if (translateMatch) {
               const x = parseFloat(translateMatch[1]);
               const y = parseFloat(translateMatch[2]);
