@@ -284,7 +284,8 @@ export function isFullHeightSibling(element: SVGElementNode, parentBounds: Eleme
  */
 export function updateFullHeightSiblings(
   containerElement: SVGElementNode,
-  deltaHeight: number
+  deltaHeight: number,
+  svgRoot?: SVGElementNode
 ): void {
   const containerBounds = calculateElementBounds(containerElement);
   
@@ -321,6 +322,78 @@ export function updateFullHeightSiblings(
         
         // For paths and other complex shapes, we'd need more sophisticated logic
         // but for Figma exports, rects are most common for backgrounds
+      }
+    }
+  });
+  
+  // Also update clipPath defs that are referenced by elements in this container
+  // This ensures clipPaths expand when their corresponding containers expand
+  if (svgRoot) {
+    updateReferencedClipPaths(svgRoot, containerElement, containerBounds, deltaHeight);
+  }
+}
+
+/**
+ * Updates specific clipPath rectangles that are referenced by elements in the container
+ */
+function updateReferencedClipPaths(
+  svgTree: SVGElementNode,
+  containerElement: SVGElementNode,
+  containerBounds: ElementBounds,
+  deltaHeight: number
+): void {
+  // Find all clip-path references in the container
+  const clipPathIds = new Set<string>();
+  
+  function collectClipPathReferences(element: SVGElementNode): void {
+    const clipPath = element.attributes['clip-path'];
+    if (clipPath) {
+      // Extract ID from url(#clipPathId) format
+      const match = clipPath.match(/url\(#([^)]+)\)/);
+      if (match) {
+        clipPathIds.add(match[1]);
+      }
+    }
+    
+    // Recursively check children
+    element.children.forEach(collectClipPathReferences);
+  }
+  
+  collectClipPathReferences(containerElement);
+  
+  if (clipPathIds.size === 0) return;
+  
+  // Find the defs element in the SVG tree
+  function findDefs(element: SVGElementNode): SVGElementNode | null {
+    for (const child of element.children) {
+      if (child.tagName.toLowerCase() === 'defs') {
+        return child;
+      }
+      const found = findDefs(child);
+      if (found) return found;
+    }
+    return null;
+  }
+
+  const defsElement = findDefs(svgTree);
+  if (!defsElement) return;
+
+  // Update only the referenced clipPaths
+  defsElement.children.forEach(child => {
+    if (child.tagName.toLowerCase() === 'clippath') {
+      const clipPathId = child.attributes.id;
+      if (clipPathId && clipPathIds.has(clipPathId)) {
+        // Check for rect children in this specific clipPath
+        child.children.forEach(clipChild => {
+          if (clipChild.tagName.toLowerCase() === 'rect') {
+            // Use the same logic as isFullHeightSibling but for clipPath rects
+            if (isFullHeightSibling(clipChild, containerBounds)) {
+              const currentHeight = parseFloat(clipChild.attributes.height || '0');
+              const newHeight = Math.max(0, currentHeight + deltaHeight);
+              clipChild.attributes.height = String(newHeight);
+            }
+          }
+        });
       }
     }
   });
@@ -390,7 +463,7 @@ export function updateElementAndAncestors(
   }
   
   // Update full-height siblings in the parent container
-  updateFullHeightSiblings(parentElement, deltaHeight);
+  updateFullHeightSiblings(parentElement, deltaHeight, svgTree);
   
   // If parent is the SVG root, also update SVG dimensions
   if (parentElement.tagName === 'svg') {
@@ -410,6 +483,7 @@ export function updateElementAndAncestors(
         parentElement.attributes.viewBox = `${minX} ${minY} ${width} ${newHeight}`;
       }
     }
+    
     return;
   }
   

@@ -99,6 +99,205 @@ describe('Recursive Height Update System', () => {
     });
   });
 
+  describe('ClipPath Defs Update', () => {
+    it('should update clipPath rectangles in defs when text expands', () => {
+      const svgWithClipPath = `
+        <svg width="390" height="626" viewBox="0 0 390 626">
+          <defs>
+            <clipPath id="clip0_210_520">
+              <rect width="390" height="626" fill="white"/>
+            </clipPath>
+          </defs>
+          <rect width="390" height="626" fill="url(#paint0_linear_210_520)"/>
+          <g id="Frame 32" clip-path="url(#clip0_210_520)">
+            <text id="clipped-text" fill="#FDFDFD" font-family="Montserrat" font-size="12">
+              <tspan x="16" y="479.802">Short text</tspan>
+            </text>
+          </g>
+        </svg>
+      `;
+
+      const textComponent: Component = {
+        id: 'text1',
+        type: 'text',
+        elementId: 'clipped-text',
+        renderingStrategy: {
+          width: {
+            type: 'constrained',
+            value: 350
+          }
+        }
+      };
+
+      const connection: Connection = {
+        sourceNodeId: 'data1',
+        sourceField: 'longText',
+        targetNodeId: 'text1',
+      };
+
+      const layout: Layout = {
+        svg: svgWithClipPath,
+        connections: [connection],
+        components: [textComponent],
+      };
+
+      const dataSources: DataSources = {
+        data1: { 
+          longText: 'This is a very long text that will expand and should cause both the background rect and the clipPath rect to expand, preventing content from being clipped.'
+        },
+      };
+
+      const result = renderFlowMolio(layout, dataSources);
+
+      // Check that background rect was updated
+      const backgroundRectMatch = result.match(/<rect[^>]*width="390"[^>]*height="([^"]*)"/);
+      expect(backgroundRectMatch).toBeTruthy();
+      const backgroundHeight = parseFloat(backgroundRectMatch![1]);
+      expect(backgroundHeight).toBeGreaterThan(626);
+
+      // Check that clipPath rect was also updated (note: clipPath is rendered as lowercase 'clippath')
+      const clipPathRectMatch = result.match(/<clippath[^>]*>[\s\S]*?<rect[^>]*width="390"[^>]*height="([^"]*)"/);
+      expect(clipPathRectMatch).toBeTruthy();
+      const clipPathHeight = parseFloat(clipPathRectMatch![1]);
+      expect(clipPathHeight).toBeGreaterThan(626);
+      expect(clipPathHeight).toBeCloseTo(backgroundHeight, 1); // Should be very close to background height
+
+      // Verify text expanded
+      const tspanCount = (result.match(/<tspan/g) || []).length;
+      expect(tspanCount).toBeGreaterThan(1);
+
+      // Verify SVG height was updated
+      const svgHeightMatch = result.match(/<svg[^>]*height="([^"]*)"/);
+      expect(svgHeightMatch).toBeTruthy();
+      const svgHeight = parseFloat(svgHeightMatch![1]);
+      expect(svgHeight).toBeGreaterThan(626);
+    });
+
+    it('should handle multiple clipPaths in defs', () => {
+      const svgWithMultipleClipPaths = `
+        <svg width="400" height="500" viewBox="0 0 400 500">
+          <defs>
+            <clipPath id="fullClip">
+              <rect width="400" height="500" fill="white"/>
+            </clipPath>
+            <clipPath id="partialClip">
+              <rect x="0" y="100" width="400" height="200" fill="white"/>
+            </clipPath>
+          </defs>
+          <rect width="400" height="500" fill="white"/>
+          <g clip-path="url(#fullClip)">
+            <text id="text1" font-size="12">
+              <tspan x="10" y="400">Expanding text</tspan>
+            </text>
+          </g>
+        </svg>
+      `;
+
+      const textComponent: Component = {
+        id: 'comp1',
+        type: 'text',
+        elementId: 'text1',
+        renderingStrategy: {
+          width: { type: 'constrained', value: 380 }
+        }
+      };
+
+      const connection: Connection = {
+        sourceNodeId: 'data1',
+        sourceField: 'text',
+        targetNodeId: 'comp1',
+      };
+
+      const layout: Layout = {
+        svg: svgWithMultipleClipPaths,
+        connections: [connection],
+        components: [textComponent],
+      };
+
+      const dataSources: DataSources = {
+        data1: { 
+          text: 'This long text will expand the document and should update the full-height clipPath but not the partial one.'
+        },
+      };
+
+      const result = renderFlowMolio(layout, dataSources);
+
+      // Full clipPath should be updated (height >= 90% of original)
+      const fullClipMatch = result.match(/<clippath[^>]*id="fullClip"[^>]*>[\s\S]*?<rect[^>]*height="([^"]*)"/);
+      expect(fullClipMatch).toBeTruthy();
+      const fullClipHeight = parseFloat(fullClipMatch![1]);
+      expect(fullClipHeight).toBeGreaterThan(500);
+
+      // Partial clipPath should NOT be updated (height < 90% of original, or y > 10)
+      const partialClipMatch = result.match(/<clippath[^>]*id="partialClip"[^>]*>[\s\S]*?<rect[^>]*height="([^"]*)"/);
+      expect(partialClipMatch).toBeTruthy();
+      const partialClipHeight = parseFloat(partialClipMatch![1]);
+      expect(partialClipHeight).toBe(200); // Should remain unchanged
+    });
+
+    it('should only update clipPaths that are actually referenced', () => {
+      const svgWithUnusedClipPath = `
+        <svg width="400" height="500" viewBox="0 0 400 500">
+          <defs>
+            <clipPath id="usedClip">
+              <rect width="400" height="500" fill="white"/>
+            </clipPath>
+            <clipPath id="unusedClip">
+              <rect width="400" height="500" fill="white"/>
+            </clipPath>
+          </defs>
+          <rect width="400" height="500" fill="white"/>
+          <g clip-path="url(#usedClip)">
+            <text id="text1" font-size="12">
+              <tspan x="10" y="400">Expanding text</tspan>
+            </text>
+          </g>
+        </svg>
+      `;
+
+      const textComponent: Component = {
+        id: 'comp1',
+        type: 'text',
+        elementId: 'text1',
+        renderingStrategy: {
+          width: { type: 'constrained', value: 380 }
+        }
+      };
+
+      const connection: Connection = {
+        sourceNodeId: 'data1',
+        sourceField: 'text',
+        targetNodeId: 'comp1',
+      };
+
+      const layout: Layout = {
+        svg: svgWithUnusedClipPath,
+        connections: [connection],
+        components: [textComponent],
+      };
+
+      const dataSources: DataSources = {
+        data1: { 
+          text: 'This long text will expand and should update only the used clipPath, not the unused one.'
+        },
+      };
+
+      const result = renderFlowMolio(layout, dataSources);
+
+      // Used clipPath should be updated
+      const usedClipMatch = result.match(/<clippath[^>]*id="usedClip"[^>]*>[\s\S]*?<rect[^>]*height="([^"]*)"/);
+      expect(usedClipMatch).toBeTruthy();
+      const usedClipHeight = parseFloat(usedClipMatch![1]);
+      expect(usedClipHeight).toBeGreaterThan(500);
+
+      // Unused clipPath should NOT be updated (should remain at 500)
+      const unusedClipMatch = result.match(/<clippath[^>]*id="unusedClip"[^>]*>[\s\S]*?<rect[^>]*height="([^"]*)"/);
+      expect(unusedClipMatch).toBeTruthy();
+      const unusedClipHeight = parseFloat(unusedClipMatch![1]);
+      expect(unusedClipHeight).toBe(500); // Should remain unchanged
+    });
+  });
+
   describe('Tricky Nested Structure', () => {
     it('should handle complex nested containers with text expansion', () => {
       const trickySvg = `
