@@ -10,11 +10,11 @@ import {
   ColorRole,
 } from '../types';
 
+import { handleTextHeightChange } from './svgBounds';
 import { findElementById } from './svgUtils';
 import {
   calculateTextElementHeight,
   shiftElementsBelow,
-  updateFullHeightElements,
   extractLinesFromElement,
 } from './textLayoutUtils';
 import { breakTextIntoLines, generateTspans, FontConfig } from './textUtils';
@@ -57,8 +57,7 @@ function applyTextDataBindings({
   connections,
   dataSources,
   components = [],
-}: DataBindingContext): number {
-  let totalHeightDelta = 0;
+}: DataBindingContext): void {
 
   // Process each connection for text components only
   connections.forEach(connection => {
@@ -181,10 +180,10 @@ function applyTextDataBindings({
           const { height: newHeight } = calculateTextElementHeight(targetElement, oldLineHeight);
           const heightDelta = newHeight - originalHeight;
 
-          // If height changed, shift elements below and update total height delta
+          // If height changed, shift elements below and update container hierarchy
           if (heightDelta !== 0) {
             shiftElementsBelow(svgTree, y, heightDelta);
-            totalHeightDelta += heightDelta;
+            handleTextHeightChange(svgTree, targetElement, heightDelta);
           }
         } else {
           // Natural strategy - use existing behavior
@@ -206,8 +205,6 @@ function applyTextDataBindings({
     // Also update textContent for compatibility
     targetElement.textContent = dataString;
   });
-
-  return totalHeightDelta;
 }
 
 /**
@@ -337,22 +334,14 @@ function applyColorDataBindings({
  * Applies data bindings from data source to SVG elements
  */
 export function applyDataBindings(context: DataBindingContext): void {
-  const { svgTree } = context;
-  const originalSvgHeight = svgTree.attributes.height ? parseFloat(svgTree.attributes.height) : 0;
-
-  // Apply text data bindings and get height delta
-  const totalHeightDelta = applyTextDataBindings(context);
+  // Apply text data bindings (each text element handles its own container updates)
+  applyTextDataBindings(context);
 
   // Apply image data bindings
   applyImageDataBindings(context);
 
   // Apply color data bindings
   applyColorDataBindings(context);
-
-  // Update full-height elements if there were any height changes
-  if (totalHeightDelta !== 0) {
-    updateFullHeightElements(svgTree, totalHeightDelta, originalSvgHeight);
-  }
 }
 
 /**
