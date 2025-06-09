@@ -1,7 +1,14 @@
 import { encode } from 'he';
 import { HTMLElement } from 'node-html-parser';
 
-import { DataBindingContext, SVGElementNode, JSONValue, TextLayoutComponent } from '../types';
+import {
+  DataBindingContext,
+  SVGElementNode,
+  JSONValue,
+  TextLayoutComponent,
+  ColorReplacementComponent,
+  ColorRole,
+} from '../types';
 
 import { findElementById } from './svgUtils';
 import {
@@ -43,182 +50,305 @@ function getValueFromPath(obj: JSONValue, path: string): JSONValue | undefined {
 }
 
 /**
- * Applies data bindings from data source to SVG elements
+ * Applies text data bindings and handles text layout changes
  */
-export function applyDataBindings({
+function applyTextDataBindings({
+  svgTree,
+  connections,
+  dataSources,
+  components = [],
+}: DataBindingContext): number {
+  let totalHeightDelta = 0;
+
+  // Process each connection for text components only
+  connections.forEach(connection => {
+    // Find the target component
+    const targetComponent = components.find(component => component.id === connection.targetNodeId);
+    if (!targetComponent || targetComponent.type !== 'text') {
+      return;
+    }
+
+    const elementId = targetComponent.elementId;
+
+    // Find the target element in the SVG
+    const targetElement = findElementById(svgTree, elementId);
+    if (!targetElement || !targetElement.isText) {
+      return;
+    }
+
+    // Get the data value from the source field path
+    const dataValue = getValueFromPath(
+      dataSources[connection.sourceNodeId],
+      connection.sourceField,
+    );
+    if (dataValue === undefined) return;
+
+    // For text elements, we need to handle the innerHTML for Figma's tspan elements
+    const dataString = String(dataValue);
+    const textComponent = targetComponent as TextLayoutComponent;
+
+    if (targetElement.innerHTML) {
+      // If there's tspan content, we need to update the content of each tspan
+      const tempDiv = new HTMLElement('div', {});
+      tempDiv.innerHTML = targetElement.innerHTML;
+
+      // Get all tspans
+      const tspans = tempDiv.querySelectorAll('tspan');
+
+      if (tspans.length > 0) {
+        // Check for rendering strategy
+        const renderingStrategy = textComponent.renderingStrategy;
+
+        if (renderingStrategy?.width.type === 'constrained') {
+          // Calculate original height before modification
+          const { height: originalHeight, lineHeight: oldLineHeight } =
+            calculateTextElementHeight(targetElement);
+
+          // For constrained width, break text into lines and generate tspans
+          const firstTspan = tspans[0];
+          const x = parseFloat(firstTspan.getAttribute('x') || '0');
+          const y = parseFloat(firstTspan.getAttribute('y') || '0');
+
+          // Extract font information from the first tspan for text measurement
+          const fontFamily = firstTspan.getAttribute('font-family') || 'Arial';
+          const fontSize = parseFloat(firstTspan.getAttribute('font-size') || '12');
+          const fontWeight = firstTspan.getAttribute('font-weight') || 'normal';
+          const letterSpacing = parseFloat(firstTspan.getAttribute('letter-spacing') || '0');
+
+          // Extract line spacing information
+          const lineSpacingAttr =
+            firstTspan.getAttribute('line-spacing') || firstTspan.getAttribute('line-height');
+          const lineSpacing = lineSpacingAttr ? parseFloat(lineSpacingAttr) - fontSize : 0;
+
+          const fontConfig: FontConfig = {
+            fontFamily,
+            fontSize,
+            fontWeight,
+            letterSpacing: letterSpacing || undefined,
+            lineSpacing: lineSpacing || undefined,
+          };
+
+          // Break text into lines based on width constraint
+          const lines = breakTextIntoLines(dataString, renderingStrategy.width.value, fontConfig);
+
+          // Calculate line height from existing tspans or fallback to dy/font size estimate
+          let lineHeight: number;
+          if (tspans.length >= 2) {
+            // Use the difference between first and second tspan y-coordinates
+            const firstY = parseFloat(tspans[0].getAttribute('y') || '0');
+            const secondY = parseFloat(tspans[1].getAttribute('y') || '0');
+            lineHeight = Math.abs(secondY - firstY);
+          } else {
+            // Fallback to dy attribute or font size estimate
+            lineHeight = parseFloat(firstTspan.getAttribute('dy') || String(fontSize * 1.2));
+          }
+
+          // Generate tspan data for each line with line spacing
+          const tspanData = generateTspans(lines, x, y, lineHeight, lineSpacing);
+
+          // Clear existing tspans
+          tspans.forEach(tspan => tspan.remove());
+
+          // Create new tspans for each line
+          tspanData.forEach((data, index) => {
+            const newTspan = new HTMLElement('tspan', {});
+            newTspan.setAttribute('x', String(data.x));
+            newTspan.setAttribute('y', String(data.y));
+
+            // Copy attributes from the first tspan to maintain styling
+            if (index === 0) {
+              Object.entries(firstTspan.attributes).forEach(([name, value]) => {
+                if (name !== 'x' && name !== 'y') {
+                  newTspan.setAttribute(name, value);
+                }
+              });
+            } else {
+              // For subsequent lines, copy all attributes except positioning
+              Object.entries(firstTspan.attributes).forEach(([name, value]) => {
+                if (name !== 'x' && name !== 'y' && name !== 'dy') {
+                  newTspan.setAttribute(name, value);
+                }
+              });
+            }
+
+            newTspan.textContent = data.text;
+            tempDiv.appendChild(newTspan);
+          });
+
+          // Update the innerHTML
+          targetElement.innerHTML = tempDiv.innerHTML;
+
+          // Calculate new height and height delta
+          const { height: newHeight } = calculateTextElementHeight(targetElement, oldLineHeight);
+          const heightDelta = newHeight - originalHeight;
+
+          // If height changed, shift elements below and update total height delta
+          if (heightDelta !== 0) {
+            shiftElementsBelow(svgTree, y, heightDelta);
+            totalHeightDelta += heightDelta;
+          }
+        } else {
+          // Natural strategy - use existing behavior
+          tspans[0].textContent = dataString;
+          // Clear the rest of the tspans
+          for (let i = 1; i < tspans.length; i++) {
+            tspans[i].textContent = '';
+          }
+        }
+
+        // Update the innerHTML
+        targetElement.innerHTML = tempDiv.innerHTML;
+      } else {
+        // No tspans found, just replace the entire innerHTML
+        targetElement.innerHTML = escapeXML(dataString);
+      }
+    }
+
+    // Also update textContent for compatibility
+    targetElement.textContent = dataString;
+  });
+
+  return totalHeightDelta;
+}
+
+/**
+ * Applies image data bindings
+ */
+function applyImageDataBindings({
   svgTree,
   connections,
   dataSources,
   components = [],
 }: DataBindingContext): void {
-  let totalHeightDelta = 0;
-  const originalSvgHeight = svgTree.attributes.height ? parseFloat(svgTree.attributes.height) : 0;
-
-  // Process each connection
+  // Process each connection for image components only
   connections.forEach(connection => {
     // Find the target component
     const targetComponent = components.find(component => component.id === connection.targetNodeId);
-    if (!targetComponent) {
+    if (!targetComponent || targetComponent.type !== 'image') {
       return;
     }
 
-    // Handle based on component type
-    if (targetComponent.type === 'text' || targetComponent.type === 'image') {
-      const elementId = targetComponent.elementId;
+    const elementId = targetComponent.elementId;
 
-      // Find the target element in the SVG
-      const targetElement = findElementById(svgTree, elementId);
-      if (!targetElement) {
-        return;
-      }
+    // Find the target element in the SVG
+    const targetElement = findElementById(svgTree, elementId);
+    if (!targetElement || !targetElement.isImage) {
+      return;
+    }
 
-      // Get the data value from the source field path
-      const dataValue = getValueFromPath(
-        dataSources[connection.sourceNodeId],
-        connection.sourceField,
-      );
-      if (dataValue === undefined) return;
+    // Get the data value from the source field path
+    const dataValue = getValueFromPath(
+      dataSources[connection.sourceNodeId],
+      connection.sourceField,
+    );
+    if (dataValue === undefined) return;
 
-      // Apply the value based on element type
-      if (targetComponent.type === 'text' && targetElement.isText) {
-        // For text elements, we need to handle the innerHTML for Figma's tspan elements
-        const dataString = String(dataValue);
-        const textComponent = targetComponent as TextLayoutComponent;
+    // For image elements, update the href/xlink:href attribute
+    targetElement.attributes['href'] = String(dataValue);
+    targetElement.attributes['xlink:href'] = String(dataValue);
+  });
+}
 
-        if (targetElement.innerHTML) {
-          // If there's tspan content, we need to update the content of each tspan
-          const tempDiv = new HTMLElement('div', {});
-          tempDiv.innerHTML = targetElement.innerHTML;
+/**
+ * Applies color data bindings
+ */
+function applyColorDataBindings({
+  svgTree,
+  connections,
+  dataSources,
+  components = [],
+}: DataBindingContext): void {
+  // Find connections to color components
+  const colorComponentConnections = connections.filter(conn => {
+    const targetComponent = components.find(c => c.id === conn.targetNodeId);
+    return targetComponent && targetComponent.type === 'color';
+  });
 
-          // Get all tspans
-          const tspans = tempDiv.querySelectorAll('tspan');
+  // If no connections to color components, nothing to do
+  if (colorComponentConnections.length === 0) return;
 
-          if (tspans.length > 0) {
-            // Check for rendering strategy
-            const renderingStrategy = textComponent.renderingStrategy;
+  // Process each connection to a color component
+  colorComponentConnections.forEach(connection => {
+    // Find the target color component
+    const colorComponent = components.find(
+      c => c.id === connection.targetNodeId && c.type === 'color',
+    ) as ColorReplacementComponent | undefined;
 
-            if (renderingStrategy?.width.type === 'constrained') {
-              // Calculate original height before modification
-              const { height: originalHeight, lineHeight: oldLineHeight } =
-                calculateTextElementHeight(targetElement);
+    if (!colorComponent) return;
 
-              // For constrained width, break text into lines and generate tspans
-              const firstTspan = tspans[0];
-              const x = parseFloat(firstTspan.getAttribute('x') || '0');
-              const y = parseFloat(firstTspan.getAttribute('y') || '0');
+    // Get the color value from the data source
+    const sourceValue = getValueFromPath(
+      dataSources[connection.sourceNodeId],
+      connection.sourceField,
+    );
+    if (!sourceValue || typeof sourceValue !== 'string') return;
 
-              // Extract font information from the first tspan for text measurement
-              const fontFamily = firstTspan.getAttribute('font-family') || 'Arial';
-              const fontSize = parseFloat(firstTspan.getAttribute('font-size') || '12');
-              const fontWeight = firstTspan.getAttribute('font-weight') || 'normal';
-              const letterSpacing = parseFloat(firstTspan.getAttribute('letter-spacing') || '0');
+    // This is the color we want to replace
+    const targetColor = colorComponent.color;
+    if (!targetColor) return;
 
-              // Extract line spacing information
-              const lineSpacingAttr =
-                firstTspan.getAttribute('line-spacing') || firstTspan.getAttribute('line-height');
-              const lineSpacing = lineSpacingAttr ? parseFloat(lineSpacingAttr) - fontSize : 0;
+    // Get all elements in the SVG tree
+    const applyColorToElements = (element: SVGElementNode) => {
+      // If elementIds is specified and not empty, only apply to those specific elements
+      const shouldApplyToElement =
+        !colorComponent.elementIds ||
+        colorComponent.elementIds.length === 0 ||
+        (element.id && colorComponent.elementIds.includes(element.id));
 
-              const fontConfig: FontConfig = {
-                fontFamily,
-                fontSize,
-                fontWeight,
-                letterSpacing: letterSpacing || undefined,
-                lineSpacing: lineSpacing || undefined,
-              };
-
-              // Break text into lines based on width constraint
-              const lines = breakTextIntoLines(
-                dataString,
-                renderingStrategy.width.value,
-                fontConfig,
-              );
-
-              // Calculate line height from existing tspans or fallback to dy/font size estimate
-              let lineHeight: number;
-              if (tspans.length >= 2) {
-                // Use the difference between first and second tspan y-coordinates
-                const firstY = parseFloat(tspans[0].getAttribute('y') || '0');
-                const secondY = parseFloat(tspans[1].getAttribute('y') || '0');
-                lineHeight = Math.abs(secondY - firstY);
-              } else {
-                // Fallback to dy attribute or font size estimate
-                lineHeight = parseFloat(firstTspan.getAttribute('dy') || String(fontSize * 1.2));
-              }
-
-              // Generate tspan data for each line with line spacing
-              const tspanData = generateTspans(lines, x, y, lineHeight, lineSpacing);
-
-              // Clear existing tspans
-              tspans.forEach(tspan => tspan.remove());
-
-              // Create new tspans for each line
-              tspanData.forEach((data, index) => {
-                const newTspan = new HTMLElement('tspan', {});
-                newTspan.setAttribute('x', String(data.x));
-                newTspan.setAttribute('y', String(data.y));
-
-                // Copy attributes from the first tspan to maintain styling
-                if (index === 0) {
-                  Object.entries(firstTspan.attributes).forEach(([name, value]) => {
-                    if (name !== 'x' && name !== 'y') {
-                      newTspan.setAttribute(name, value);
-                    }
-                  });
-                } else {
-                  // For subsequent lines, copy all attributes except positioning
-                  Object.entries(firstTspan.attributes).forEach(([name, value]) => {
-                    if (name !== 'x' && name !== 'y' && name !== 'dy') {
-                      newTspan.setAttribute(name, value);
-                    }
-                  });
-                }
-
-                newTspan.textContent = data.text;
-                tempDiv.appendChild(newTspan);
-              });
-
-              // Update the innerHTML
-              targetElement.innerHTML = tempDiv.innerHTML;
-
-              // Calculate new height and height delta
-              const { height: newHeight } = calculateTextElementHeight(
-                targetElement,
-                oldLineHeight,
-              );
-              const heightDelta = newHeight - originalHeight;
-
-              // If height changed, shift elements below and update total height delta
-              if (heightDelta !== 0) {
-                shiftElementsBelow(svgTree, y, heightDelta);
-                totalHeightDelta += heightDelta;
-              }
-            } else {
-              // Natural strategy - use existing behavior
-              tspans[0].textContent = dataString;
-              // Clear the rest of the tspans
-              for (let i = 1; i < tspans.length; i++) {
-                tspans[i].textContent = '';
-              }
-            }
-
-            // Update the innerHTML
-            targetElement.innerHTML = tempDiv.innerHTML;
-          } else {
-            // No tspans found, just replace the entire innerHTML
-            targetElement.innerHTML = escapeXML(dataString);
-          }
+      if (shouldApplyToElement) {
+        // Apply colors based on enabled roles, but only if they match the target color
+        if (
+          colorComponent.enabledRoles[ColorRole.FILL] &&
+          element.attributes.fill &&
+          element.attributes.fill.toLowerCase() === targetColor.toLowerCase()
+        ) {
+          element.attributes.fill = sourceValue;
         }
 
-        // Also update textContent for compatibility
-        targetElement.textContent = dataString;
-      } else if (targetComponent.type === 'image' && targetElement.isImage) {
-        // For image elements, update the href/xlink:href attribute
-        targetElement.attributes['href'] = String(dataValue);
-        targetElement.attributes['xlink:href'] = String(dataValue);
+        if (
+          colorComponent.enabledRoles[ColorRole.STROKE] &&
+          element.attributes.stroke &&
+          element.attributes.stroke.toLowerCase() === targetColor.toLowerCase()
+        ) {
+          element.attributes.stroke = sourceValue;
+        }
+
+        if (
+          colorComponent.enabledRoles[ColorRole.STOP_COLOR] &&
+          element.tagName === 'stop' &&
+          element.attributes['stop-color'] &&
+          element.attributes['stop-color'].toLowerCase() === targetColor.toLowerCase()
+        ) {
+          element.attributes['stop-color'] = sourceValue;
+        }
       }
-    }
-    // Color components are handled separately in applyColorComponents function
+
+      // Process children recursively
+      if (element.children && element.children.length > 0) {
+        element.children.forEach(applyColorToElements);
+      }
+    };
+
+    // Start processing from the root
+    applyColorToElements(svgTree);
   });
+}
+
+/**
+ * Applies data bindings from data source to SVG elements
+ */
+export function applyDataBindings(context: DataBindingContext): void {
+  const { svgTree } = context;
+  const originalSvgHeight = svgTree.attributes.height ? parseFloat(svgTree.attributes.height) : 0;
+
+  // Apply text data bindings and get height delta
+  const totalHeightDelta = applyTextDataBindings(context);
+
+  // Apply image data bindings
+  applyImageDataBindings(context);
+
+  // Apply color data bindings
+  applyColorDataBindings(context);
 
   // Update full-height elements and SVG height if there were any height changes
   if (totalHeightDelta !== 0) {
