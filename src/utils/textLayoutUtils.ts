@@ -227,7 +227,14 @@ function isFullHeightElement(element: SVGElementNode, svgHeight: number): boolea
 }
 
 /**
- * Updates heights of full-height background elements
+ * Updates heights of full-height background elements and SVG dimensions
+ * 
+ * When text content expands and increases the overall document height, we need to:
+ * 1. Expand background elements (like full-height rectangles) to maintain visual consistency
+ * 2. Update the SVG container dimensions to accommodate the new content
+ * 3. Update the viewBox to ensure proper coordinate mapping
+ * 
+ * This prevents backgrounds from being too short and content from being clipped.
  */
 export function updateFullHeightElements(
   svgTree: SVGElementNode,
@@ -241,31 +248,19 @@ export function updateFullHeightElements(
       element.attributes.height = String(newHeight);
     }
 
+    // If this is the SVG root element, also update viewBox
+    if (element.tagName === 'svg' && element.attributes.viewBox) {
+      const viewBoxParts = element.attributes.viewBox.split(/\s+/);
+      if (viewBoxParts.length === 4) {
+        const [minX, minY, width, height] = viewBoxParts.map(parseFloat);
+        const newHeight = Math.max(0, height + deltaHeight);
+        element.attributes.viewBox = `${minX} ${minY} ${width} ${newHeight}`;
+      }
+    }
+
     // Recursively process children
     element.children.forEach(processElement);
   }
 
   processElement(svgTree);
-}
-
-/**
- * Updates the SVG height attribute and viewBox (only if they exist)
- */
-export function updateSvgHeight(svgTree: SVGElementNode, deltaHeight: number): void {
-  // Only update height if the SVG already has a height attribute
-  if (svgTree.attributes.height) {
-    const currentHeight = parseFloat(svgTree.attributes.height);
-    const newHeight = Math.max(0, currentHeight + deltaHeight);
-    svgTree.attributes.height = String(newHeight);
-  }
-
-  // Update viewBox if it exists
-  if (svgTree.attributes.viewBox) {
-    const viewBoxParts = svgTree.attributes.viewBox.split(/\s+/);
-    if (viewBoxParts.length === 4) {
-      const [minX, minY, width, height] = viewBoxParts.map(parseFloat);
-      const newHeight = Math.max(0, height + deltaHeight);
-      svgTree.attributes.viewBox = `${minX} ${minY} ${width} ${newHeight}`;
-    }
-  }
 }

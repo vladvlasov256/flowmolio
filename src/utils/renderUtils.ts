@@ -15,7 +15,6 @@ import {
   calculateTextElementHeight,
   shiftElementsBelow,
   updateFullHeightElements,
-  updateSvgHeight,
 } from './textLayoutUtils';
 import { breakTextIntoLines, generateTspans, FontConfig } from './textUtils';
 
@@ -350,10 +349,9 @@ export function applyDataBindings(context: DataBindingContext): void {
   // Apply color data bindings
   applyColorDataBindings(context);
 
-  // Update full-height elements and SVG height if there were any height changes
+  // Update full-height elements if there were any height changes
   if (totalHeightDelta !== 0) {
     updateFullHeightElements(svgTree, totalHeightDelta, originalSvgHeight);
-    updateSvgHeight(svgTree, totalHeightDelta);
   }
 }
 
