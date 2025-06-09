@@ -46,7 +46,7 @@ describe('renderFlowMolio', () => {
 
       const result = renderFlowMolio(layout, dataSources);
       expect(result).toEqual(
-        `<svg width="100" height="100"><rect id="rect1" fill="#00ff00" stroke="#0000ff" /><circle id="circle1" fill="#00ff00" /><defs ><lineargradient ><stop stop-color="#ff0000" offset="0%" /></lineargradient></defs></svg>`,
+        `<svg id="fmo-svg-1" width="100" height="100"><rect id="rect1" fill="#00ff00" stroke="#0000ff" /><circle id="circle1" fill="#00ff00" /><defs id="fmo-defs-1"><lineargradient id="fmo-lineargradient-1"><stop id="fmo-stop-1" stop-color="#ff0000" offset="0%" /></lineargradient></defs></svg>`,
       );
     });
 
@@ -80,7 +80,7 @@ describe('renderFlowMolio', () => {
 
       const result = renderFlowMolio(layout, dataSources);
       expect(result).toEqual(
-        `<svg width="100" height="100"><rect id="rect1" fill="#ff0000" stroke="#ff00ff" /><circle id="circle1" fill="#ff0000" /><defs ><lineargradient ><stop stop-color="#ff0000" offset="0%" /></lineargradient></defs></svg>`,
+        `<svg id="fmo-svg-1" width="100" height="100"><rect id="rect1" fill="#ff0000" stroke="#ff00ff" /><circle id="circle1" fill="#ff0000" /><defs id="fmo-defs-1"><lineargradient id="fmo-lineargradient-1"><stop id="fmo-stop-1" stop-color="#ff0000" offset="0%" /></lineargradient></defs></svg>`,
       );
     });
 
@@ -114,7 +114,7 @@ describe('renderFlowMolio', () => {
 
       const result = renderFlowMolio(layout, dataSources);
       expect(result).toEqual(
-        `<svg width="100" height="100"><rect id="rect1" fill="#ff0000" stroke="#0000ff" /><circle id="circle1" fill="#ff0000" /><defs ><lineargradient ><stop stop-color="#ffff00" offset="0%" /></lineargradient></defs></svg>`,
+        `<svg id="fmo-svg-1" width="100" height="100"><rect id="rect1" fill="#ff0000" stroke="#0000ff" /><circle id="circle1" fill="#ff0000" /><defs id="fmo-defs-1"><lineargradient id="fmo-lineargradient-1"><stop id="fmo-stop-1" stop-color="#ffff00" offset="0%" /></lineargradient></defs></svg>`,
       );
     });
 
@@ -148,7 +148,7 @@ describe('renderFlowMolio', () => {
 
       const result = renderFlowMolio(layout, dataSources);
       expect(result).toEqual(
-        `<svg width="100" height="100"><rect id="rect1" fill="#00ffff" stroke="#0000ff" /><circle id="circle1" fill="#00ffff" /><defs ><lineargradient ><stop stop-color="#00ffff" offset="0%" /></lineargradient></defs></svg>`,
+        `<svg id="fmo-svg-1" width="100" height="100"><rect id="rect1" fill="#00ffff" stroke="#0000ff" /><circle id="circle1" fill="#00ffff" /><defs id="fmo-defs-1"><lineargradient id="fmo-lineargradient-1"><stop id="fmo-stop-1" stop-color="#00ffff" offset="0%" /></lineargradient></defs></svg>`,
       );
     });
 
@@ -182,7 +182,7 @@ describe('renderFlowMolio', () => {
 
       const result = renderFlowMolio(layout, dataSources);
       expect(result).toEqual(
-        `<svg width="100" height="100"><rect id="rect1" fill="#purple" stroke="#0000ff" /><circle id="circle1" fill="#purple" /><defs ><lineargradient ><stop stop-color="#ff0000" offset="0%" /></lineargradient></defs></svg>`,
+        `<svg id="fmo-svg-1" width="100" height="100"><rect id="rect1" fill="#purple" stroke="#0000ff" /><circle id="circle1" fill="#purple" /><defs id="fmo-defs-1"><lineargradient id="fmo-lineargradient-1"><stop id="fmo-stop-1" stop-color="#ff0000" offset="0%" /></lineargradient></defs></svg>`,
       );
     });
 
@@ -216,7 +216,7 @@ describe('renderFlowMolio', () => {
 
       const result = renderFlowMolio(layout, dataSources);
       expect(result).toEqual(
-        `<svg width="100" height="100"><rect id="rect1" fill="#ff0000" stroke="#0000ff" /><circle id="circle1" fill="#ff0000" /><defs ><lineargradient ><stop stop-color="#ff0000" offset="0%" /></lineargradient></defs></svg>`,
+        `<svg id="fmo-svg-1" width="100" height="100"><rect id="rect1" fill="#ff0000" stroke="#0000ff" /><circle id="circle1" fill="#ff0000" /><defs id="fmo-defs-1"><lineargradient id="fmo-lineargradient-1"><stop id="fmo-stop-1" stop-color="#ff0000" offset="0%" /></lineargradient></defs></svg>`,
       );
     });
 
@@ -251,7 +251,7 @@ describe('renderFlowMolio', () => {
 
       const result = renderFlowMolio(layout, dataSources);
       expect(result).toEqual(
-        `<svg width="100" height="100"><rect id="rect1" fill="#00ff00" stroke="#0000ff" /><circle id="circle1" fill="#ff0000" /><defs ><lineargradient ><stop stop-color="#ff0000" offset="0%" /></lineargradient></defs></svg>`,
+        `<svg id="fmo-svg-1" width="100" height="100"><rect id="rect1" fill="#00ff00" stroke="#0000ff" /><circle id="circle1" fill="#ff0000" /><defs id="fmo-defs-1"><lineargradient id="fmo-lineargradient-1"><stop id="fmo-stop-1" stop-color="#ff0000" offset="0%" /></lineargradient></defs></svg>`,
       );
     });
 
@@ -286,7 +286,7 @@ describe('renderFlowMolio', () => {
 
       const result = renderFlowMolio(layout, dataSources);
       expect(result).toEqual(
-        `<svg width="100" height="100"><rect id="rect1" fill="#00ff00" stroke="#0000ff" /><circle id="circle1" fill="#00ff00" /><defs ><lineargradient ><stop stop-color="#ff0000" offset="0%" /></lineargradient></defs></svg>`,
+        `<svg id="fmo-svg-1" width="100" height="100"><rect id="rect1" fill="#00ff00" stroke="#0000ff" /><circle id="circle1" fill="#00ff00" /><defs id="fmo-defs-1"><lineargradient id="fmo-lineargradient-1"><stop id="fmo-stop-1" stop-color="#ff0000" offset="0%" /></lineargradient></defs></svg>`,
       );
     });
 
@@ -321,7 +321,7 @@ describe('renderFlowMolio', () => {
 
       const result = renderFlowMolio(layout, dataSources);
       expect(result).toEqual(
-        `<svg width="100" height="100"><rect id="rect1" fill="#00ff00" stroke="#0000ff" /><circle id="circle1" fill="#00ff00" /><defs ><lineargradient ><stop stop-color="#ff0000" offset="0%" /></lineargradient></defs></svg>`,
+        `<svg id="fmo-svg-1" width="100" height="100"><rect id="rect1" fill="#00ff00" stroke="#0000ff" /><circle id="circle1" fill="#00ff00" /><defs id="fmo-defs-1"><lineargradient id="fmo-lineargradient-1"><stop id="fmo-stop-1" stop-color="#ff0000" offset="0%" /></lineargradient></defs></svg>`,
       );
     });
 
@@ -364,7 +364,7 @@ describe('renderFlowMolio', () => {
 
       const result = renderFlowMolio(layout, dataSources);
       expect(result).toEqual(
-        `<svg width="100" height="100"><rect id="rect1" fill="#00ff00" stroke="#0000ff" /><rect id="rect2" fill="#ff0000" stroke="#0000ff" /><circle id="circle1" fill="#00ff00" /></svg>`,
+        `<svg id="fmo-svg-1" width="100" height="100"><rect id="rect1" fill="#00ff00" stroke="#0000ff" /><rect id="rect2" fill="#ff0000" stroke="#0000ff" /><circle id="circle1" fill="#00ff00" /></svg>`,
       );
     });
 
@@ -399,7 +399,7 @@ describe('renderFlowMolio', () => {
 
       const result = renderFlowMolio(layout, dataSources);
       expect(result).toEqual(
-        `<svg width="100" height="100"><rect id="rect1" fill="#ff0000" stroke="#ff00ff" /><circle id="circle1" fill="#ff0000" /><defs ><lineargradient ><stop stop-color="#ff0000" offset="0%" /></lineargradient></defs></svg>`,
+        `<svg id="fmo-svg-1" width="100" height="100"><rect id="rect1" fill="#ff0000" stroke="#ff00ff" /><circle id="circle1" fill="#ff0000" /><defs id="fmo-defs-1"><lineargradient id="fmo-lineargradient-1"><stop id="fmo-stop-1" stop-color="#ff0000" offset="0%" /></lineargradient></defs></svg>`,
       );
     });
   });

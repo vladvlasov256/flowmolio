@@ -348,9 +348,16 @@ export function applyDataBindings(context: DataBindingContext): void {
  */
 export function serializeSVG(svgTree: SVGElementNode): string {
   // Create a simple SVG serialization
-  const attributes = Object.entries(svgTree.attributes)
+  let attributes = Object.entries(svgTree.attributes)
+    .filter(([key]) => key !== 'id') // Remove id from attributes since we'll handle it separately
     .map(([key, value]) => `${key}="${escapeXML(value)}"`)
     .join(' ');
+
+  // Include the id if it exists (either original or generated)
+  if (svgTree.id) {
+    const idAttr = `id="${escapeXML(svgTree.id)}"`;
+    attributes = attributes ? `${idAttr} ${attributes}` : idAttr;
+  }
 
   let result = `<${svgTree.tagName} ${attributes}`;
 

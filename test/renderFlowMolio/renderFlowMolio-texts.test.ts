@@ -40,7 +40,7 @@ describe('renderFlowMolio - Texts', () => {
 
       const result = renderFlowMolio(layout, dataSources);
       expect(result).toEqual(
-        `<svg width="100" height="100"><text id="text1"><tspan x="0" y="0">New Text</tspan></text><text id="text2"><tspan x="0" y="0">Another Text</tspan></text></svg>`,
+        `<svg id="fmo-svg-1" width="100" height="100"><text id="text1"><tspan x="0" y="0">New Text</tspan></text><text id="text2"><tspan x="0" y="0">Another Text</tspan></text></svg>`,
       );
     });
 
@@ -78,7 +78,7 @@ describe('renderFlowMolio - Texts', () => {
 
       const result = renderFlowMolio(layout, dataSources);
       expect(result).toEqual(
-        `<svg width="100" height="100"><text id="text1"><tspan x="0" y="0">Nested Product Name</tspan></text><text id="text2"><tspan x="0" y="0">Another Text</tspan></text></svg>`,
+        `<svg id="fmo-svg-1" width="100" height="100"><text id="text1"><tspan x="0" y="0">Nested Product Name</tspan></text><text id="text2"><tspan x="0" y="0">Another Text</tspan></text></svg>`,
       );
     });
 
@@ -110,7 +110,7 @@ describe('renderFlowMolio - Texts', () => {
 
       const result = renderFlowMolio(layout, dataSources);
       expect(result).toEqual(
-        `<svg width="100" height="100"><text id="text1"><tspan x="0" y="0">Original Text</tspan></text><text id="text2"><tspan x="0" y="0">Another Text</tspan></text></svg>`,
+        `<svg id="fmo-svg-1" width="100" height="100"><text id="text1"><tspan x="0" y="0">Original Text</tspan></text><text id="text2"><tspan x="0" y="0">Another Text</tspan></text></svg>`,
       );
     });
 
@@ -144,7 +144,7 @@ describe('renderFlowMolio - Texts', () => {
 
       const result = renderFlowMolio(layout, dataSources);
       expect(result).toEqual(
-        `<svg width="100" height="100"><text id="text1"><tspan x="0" y="0">Original Text</tspan></text><text id="text2"><tspan x="0" y="0">Another Text</tspan></text></svg>`,
+        `<svg id="fmo-svg-1" width="100" height="100"><text id="text1"><tspan x="0" y="0">Original Text</tspan></text><text id="text2"><tspan x="0" y="0">Another Text</tspan></text></svg>`,
       );
     });
   });
@@ -928,7 +928,7 @@ describe('renderFlowMolio - Texts', () => {
 
     const result = renderFlowMolio(layout, dataSources);
     expect(result).toEqual(
-      `<svg width="100" height="100"><text ><tspan x="0" y="0">First</tspan></text><text ><tspan x="0" y="0">Second</tspan></text></svg>`,
+      `<svg id="fmo-svg-1" width="100" height="100"><text id="fmo-text-1"><tspan x="0" y="0">First</tspan></text><text id="fmo-text-2"><tspan x="0" y="0">Second</tspan></text></svg>`,
     );
   });
 

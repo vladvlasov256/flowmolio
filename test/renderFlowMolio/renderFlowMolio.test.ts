@@ -22,7 +22,7 @@ describe('renderFlowMolio', () => {
       };
 
       const result = renderFlowMolio(layout, {});
-      expect(result).toEqual('<svg  />');
+      expect(result).toEqual('<svg id="fmo-svg-1" />');
     });
 
     it('should return error message when SVG parsing fails', () => {
@@ -91,7 +91,7 @@ describe('renderFlowMolio', () => {
 
       const result = renderFlowMolio(layout, dataSources);
       expect(result).toEqual(
-        `<svg width="200" height="200"><rect id="bg" fill="#ffffff" stroke="#000000" /><text id="title">Awesome Product</text><text id="price">$29.99</text><image id="product-img" href="https://example.com/awesome.jpg" xlink:href="https://example.com/awesome.jpg" /><circle id="badge" fill="#00ff00" /></svg>`,
+        `<svg id="fmo-svg-1" width="200" height="200"><rect id="bg" fill="#ffffff" stroke="#000000" /><text id="title">Awesome Product</text><text id="price">$29.99</text><image id="product-img" href="https://example.com/awesome.jpg" xlink:href="https://example.com/awesome.jpg" /><circle id="badge" fill="#00ff00" /></svg>`,
       );
     });
 
@@ -120,7 +120,7 @@ describe('renderFlowMolio', () => {
 
       const result = renderFlowMolio(layout, dataSources);
       expect(result).toEqual(
-        `<svg width="200" height="200"><rect id="bg" fill="#ffffff" stroke="#000000" /><text id="title">Partial Product</text><text id="price">$0.00</text><image id="product-img" href="placeholder.jpg" /><circle id="badge" fill="#ff0000" /></svg>`,
+        `<svg id="fmo-svg-1" width="200" height="200"><rect id="bg" fill="#ffffff" stroke="#000000" /><text id="title">Partial Product</text><text id="price">$0.00</text><image id="product-img" href="placeholder.jpg" /><circle id="badge" fill="#ff0000" /></svg>`,
       );
     });
 
