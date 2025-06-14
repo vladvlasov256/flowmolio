@@ -1,6 +1,8 @@
-import { SVGElementNode } from '../types';
-import { StaticCanvas, loadSVGFromString } from 'fabric/node';
+import { FabricObject, loadSVGFromString } from 'fabric/node';
 
+import { SVGElementNode } from '../types';
+
+import { serializeSVG } from './renderUtils';
 import { extractLinesFromElement } from './textLayoutUtils';
 
 /**
@@ -13,107 +15,43 @@ export interface ElementBounds {
   height: number;
 }
 
-/**
- * Cache for fabric.js parsed SVG objects to avoid re-parsing
- */
-const fabricSvgCache = new Map<string, { objects: any[], options: any }>();
 
-/**
- * Converts SVG tree to string for fabric.js processing
- */
-function svgTreeToString(svgTree: SVGElementNode): string {
-  function nodeToString(node: SVGElementNode): string {
-    const attributes = Object.entries(node.attributes)
-      .map(([key, value]) => `${key}="${value}"`)
-      .join(' ');
-    
-    const children = node.children
-      .map(child => nodeToString(child))
-      .join('');
-    
-    const innerHTML = node.innerHTML || '';
-    
-    if (children || innerHTML) {
-      return `<${node.tagName} ${attributes}>${innerHTML}${children}</${node.tagName}>`;
-    } else {
-      return `<${node.tagName} ${attributes} />`;
-    }
-  }
-
-  // Ensure we always have a complete SVG document
-  if (svgTree.tagName.toLowerCase() === 'svg') {
-    return nodeToString(svgTree);
-  } else {
-    // If we're given a non-SVG element, we need to find the SVG root
-    // For now, wrap in a basic SVG
-    return `<svg xmlns="http://www.w3.org/2000/svg">${nodeToString(svgTree)}</svg>`;
-  }
-}
 
 /**
  * Calculate element bounds using fabric.js for accurate SVG rendering
  */
 async function calculateElementBoundsWithFabric(
-  svgTree: SVGElementNode,
-  targetElementId?: string,
+  svgString: string,
+  targetElement: SVGElementNode,
 ): Promise<ElementBounds> {
-  const svgString = svgTreeToString(svgTree);
-  const cacheKey = `${svgString}_${targetElementId || 'root'}`;
+  const elementId = targetElement?.attributes.id;
+  const fabricObjectsById: Record<string, FabricObject> = {};
   
-  let fabricData = fabricSvgCache.get(cacheKey);
-  
-  if (!fabricData) {
-    try {
-      const parsedSvg = await loadSVGFromString(svgString);
-      fabricData = {
-        objects: parsedSvg.objects.filter(obj => obj !== null),
-        options: parsedSvg.options
-      };
-      fabricSvgCache.set(cacheKey, fabricData);
-    } catch (error) {
-      console.warn('Failed to parse SVG with fabric.js:', error);
-      throw error;
+  await loadSVGFromString(svgString, (element, obj) => {
+    const fabricElementId = element.getAttribute('id')
+    if (fabricElementId) {
+      fabricObjectsById[fabricElementId] = obj
     }
+  });
+  
+  // Require ID for fabric.js bounds calculation
+  if (!elementId) {
+    throw new Error(`Element must have an ID for fabric.js bounds calculation: ${targetElement.tagName}`);
   }
-  
-  if (targetElementId) {
-    // Find the specific element by ID
-    for (const obj of fabricData.objects) {
-      if (obj.id === targetElementId || 
-          obj.elementId === targetElementId || 
-          obj.data?.id === targetElementId ||
-          obj.svgUid === targetElementId) {
-        const bounds = obj.getBoundingRect();
-        return {
-          x: bounds.left,
-          y: bounds.top,
-          width: bounds.width,
-          height: bounds.height
-        };
-      }
-    }
-    
-    // If element not found, return zero bounds
-    return { x: 0, y: 0, width: 0, height: 0 };
-  } else {
-    // Calculate overall bounds of all objects
-    if (fabricData.objects.length === 0) {
-      return { x: 0, y: 0, width: 0, height: 0 };
-    }
-    
-    const allBounds = fabricData.objects.map(obj => obj.getBoundingRect());
-    const minX = Math.min(...allBounds.map(b => b.left));
-    const minY = Math.min(...allBounds.map(b => b.top));
-    const maxX = Math.max(...allBounds.map(b => b.left + b.width));
-    const maxY = Math.max(...allBounds.map(b => b.top + b.height));
-    
+
+  const fabricObject = fabricObjectsById[elementId];
+  if (fabricObject) {
+    const bounds = fabricObject.getBoundingRect();
     return {
-      x: minX,
-      y: minY,
-      width: maxX - minX,
-      height: maxY - minY
+      x: bounds.left,
+      y: bounds.top,
+      width: bounds.width,
+      height: bounds.height
     };
   }
+  
+  // If element with ID not found, return zero bounds
+  return { x: 0, y: 0, width: 0, height: 0 };
 }
 
 /**
@@ -130,28 +68,73 @@ export interface HeightUpdateContext {
 
 /**
  * Calculate element bounds using fabric.js (async)
- * This is the primary bounds calculation function
+ * This version creates a root SVG if none provided
+ * Handles root <svg> elements specially by returning their width/height attributes
  */
-export async function calculateElementBounds(
+export async function calculateSingleElementBounds(
   element: SVGElementNode, 
   svgRoot?: SVGElementNode
 ): Promise<ElementBounds> {
-  const root = svgRoot || element;
-  const elementId = element.attributes.id;
+  // Handle root SVG elements specially
+  if (element.tagName.toLowerCase() === 'svg') {
+    const width = parseFloat(element.attributes.width || '0');
+    const height = parseFloat(element.attributes.height || '0');
+    return {
+      x: 0,
+      y: 0,
+      width,
+      height
+    };
+  }
   
-  return await calculateElementBoundsWithFabric(root, elementId);
+  let root: SVGElementNode;
+  
+  if (svgRoot) {
+    root = svgRoot;
+  } else {
+    // Create a temporary root SVG if none provided
+    root = {
+      tagName: 'svg',
+      attributes: {
+        width: '1000',
+        height: '1000',
+        xmlns: 'http://www.w3.org/2000/svg'
+      },
+      children: [element],
+      id: 'temp-root',
+      isText: false,
+      isImage: false
+    };
+  }
+  
+  // Use the serialized SVG string from renderUtils
+  const svgString = serializeSVG(root);
+  
+  return await calculateElementBoundsWithFabric(svgString, element);
 }
 
 /**
  * Calculate bounds for an element within the context of the full SVG tree
- * This version has access to the full SVG context for better positioning
+ * This is the primary bounds calculation function
+ * Throws errors for invalid combinations of SVG elements
  */
-export async function calculateElementBoundsInContext(
+export async function calculateElementBounds(
   element: SVGElementNode,
   svgRoot: SVGElementNode,
 ): Promise<ElementBounds> {
-  const elementId = element.attributes.id;
-  return await calculateElementBoundsWithFabric(svgRoot, elementId);
+  // Throw error if element is an SVG
+  if (element.tagName.toLowerCase() === 'svg') {
+    throw new Error('Cannot calculate bounds for SVG element using calculateElementBounds. Use calculateSingleElementBounds instead.');
+  }
+  
+  // Throw error if svgRoot is not an SVG
+  if (svgRoot.tagName.toLowerCase() !== 'svg') {
+    throw new Error('svgRoot must be an SVG element');
+  }
+  
+  const svgString = serializeSVG(svgRoot);
+  
+  return await calculateElementBoundsWithFabric(svgString, element);
 }
 
 /**
@@ -215,8 +198,28 @@ export function calculateTextBoundsSync(element: SVGElementNode): ElementBounds 
 export async function containsChangedElement(
   element: SVGElementNode, 
   changedElementBounds: ElementBounds,
-  svgRoot?: SVGElementNode
+  svgRoot: SVGElementNode
 ): Promise<boolean> {
+  const tagName = element.tagName.toLowerCase();
+  
+  // Ignore elements that don't have visual bounds or make no sense for containment
+  const nonRenderableElements = ['defs', 'clippath', 'mask', 'pattern', 'marker', 'symbol', 'style', 'title', 'desc', 'metadata'];
+  if (nonRenderableElements.includes(tagName)) {
+    return false;
+  }
+  
+  // Special handling for group elements
+  // Groups can't have bounds calculated by fabric.js, but they can contain elements that do
+  if (tagName === 'g') {
+    // Check if any child of the group contains the changed element
+    for (const child of element.children) {
+      if (await containsChangedElement(child, changedElementBounds, svgRoot)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   const elementBounds = await calculateElementBounds(element, svgRoot);
 
   // Calculate vertical overlap between the two elements
@@ -227,7 +230,9 @@ export async function containsChangedElement(
   );
   
   // If there's no overlap, return false
-  if (overlapTop >= overlapBottom) return false;
+  if (overlapTop >= overlapBottom) {
+    return false;
+  }
   
   const overlapHeight = overlapBottom - overlapTop;
   const changedElementHeight = changedElementBounds.height;
@@ -236,34 +241,13 @@ export async function containsChangedElement(
   // For very small elements, any overlap counts
   // For larger elements, require at least 90% overlap
   if (changedElementHeight < 5) {
-    return overlapHeight > 0; // Any overlap is good enough for very small elements
+    return overlapHeight > 0;
   }
   
   const overlapRatio = overlapHeight / changedElementHeight;
   return overlapRatio >= 0.9;
 }
 
-/**
- * Fallback function: checks if an element is full-height relative to its parent
- * This is used when containment logic doesn't find any elements
- */
-async function isFullHeightElement(
-  element: SVGElementNode, 
-  parentBounds: ElementBounds,
-  svgRoot?: SVGElementNode
-): Promise<boolean> {
-  const elementBounds = await calculateElementBounds(element, svgRoot);
-
-  // Height should be close to parent height (within 10% tolerance)
-  const heightRatio = elementBounds.height / parentBounds.height;
-  if (heightRatio < 0.9) return false;
-
-  // Element should start near the top of parent (within 10px)
-  const relativeY = elementBounds.y - parentBounds.y;
-  if (relativeY > 10) return false;
-
-  return true;
-}
 
 /**
  * Updates heights of siblings that contain the changed element
@@ -273,16 +257,14 @@ export async function updateContainingSiblings(
   containerElement: SVGElementNode,
   changedElementBounds: ElementBounds,
   deltaHeight: number,
-  svgRoot?: SVGElementNode,
+  svgRoot: SVGElementNode,
 ): Promise<void> {
   // First pass: try to find elements that contain the changed element
-  let foundContainingElements = false;
   const elementsToUpdate: SVGElementNode[] = [];
   
   for (const child of containerElement.children) {
     if (await containsChangedElement(child, changedElementBounds, svgRoot)) {
       elementsToUpdate.push(child);
-      foundContainingElements = true;
     }
   }
   
@@ -435,7 +417,7 @@ async function calculateParentHeightChange(
   parentElement: SVGElementNode,
   childElement: SVGElementNode,
   childDeltaHeight: number,
-  svgRoot?: SVGElementNode,
+  svgRoot: SVGElementNode,
 ): Promise<number> {
   const parentBounds = await calculateElementBounds(parentElement, svgRoot);
   const childBounds = await calculateElementBounds(childElement, svgRoot);

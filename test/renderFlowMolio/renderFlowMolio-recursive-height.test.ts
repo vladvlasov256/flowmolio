@@ -1,44 +1,44 @@
 import { Component, Connection, Layout, DataSources } from '../../src/types';
 import { renderFlowMolio } from '../../src/utils/renderFlowMolio';
-import { calculateElementBounds, containsChangedElement, updateContainingSiblings } from '../../src/utils/svgBounds';
+import { calculateElementBounds, calculateSingleElementBounds, containsChangedElement, updateContainingSiblings } from '../../src/utils/svgBounds';
 import { parseSVG } from '../../src/utils/svgUtils';
 
 describe('Recursive Height Update System', () => {
   describe('calculateElementBounds', () => {
     it('should calculate correct bounds for basic elements', async () => {
       const svgTree = parseSVG(`
-        <svg width="100" height="200">
+        <svg id="svg1" width="100" height="200">
           <rect id="rect1" x="10" y="20" width="80" height="160" />
           <circle id="circle1" cx="50" cy="100" r="25" />
           <text id="text1"><tspan x="10" y="50">Test</tspan></text>
         </svg>
       `);
 
-      const rectBounds = await calculateElementBounds(svgTree.children[0]);
+      const rectBounds = await calculateElementBounds(svgTree.children[0], svgTree);
       // Fabric.js provides more accurate bounds calculation
       expect(rectBounds.x).toBeCloseTo(9.5, 1);
       expect(rectBounds.y).toBeCloseTo(19.5, 1);
       expect(rectBounds.width).toBeCloseTo(81, 1);
       expect(rectBounds.height).toBeCloseTo(161, 1);
 
-      const circleBounds = await calculateElementBounds(svgTree.children[1]);
+      const circleBounds = await calculateElementBounds(svgTree.children[1], svgTree);
       // Circle bounds should be approximately: center (50, 100), radius 25 = bounds (24.5, 74.5, 51, 51)
       expect(circleBounds.x).toBeCloseTo(24.5, 0);
       expect(circleBounds.y).toBeCloseTo(74.5, 0);
       expect(circleBounds.width).toBeCloseTo(51, 0);
       expect(circleBounds.height).toBeCloseTo(51, 0);
 
-      const svgBounds = await calculateElementBounds(svgTree);
-      // SVG overall bounds based on all its content (rect, circle, text)
-      expect(svgBounds.x).toBeCloseTo(0, 0);
-      expect(svgBounds.y).toBeCloseTo(0, 0);
-      expect(svgBounds.width).toBeCloseTo(90.5, 0);
-      expect(svgBounds.height).toBeCloseTo(180.5, 0);
+      const svgBounds = await calculateSingleElementBounds(svgTree);
+      // SVG bounds are taken from width/height attributes
+      expect(svgBounds.x).toBe(0);
+      expect(svgBounds.y).toBe(0);
+      expect(svgBounds.width).toBe(100);
+      expect(svgBounds.height).toBe(200);
     });
 
     it('should calculate group bounds as bounding box of children', async () => {
       const svgTree = parseSVG(`
-        <svg width="100" height="100">
+        <svg id="svg2" width="100" height="100">
           <g id="group1">
             <rect id="rect1" x="10" y="20" width="30" height="40" />
             <rect id="rect2" x="50" y="70" width="20" height="10" />
@@ -46,7 +46,7 @@ describe('Recursive Height Update System', () => {
         </svg>
       `);
 
-      const groupBounds = await calculateElementBounds(svgTree.children[0]);
+      const groupBounds = await calculateElementBounds(svgTree.children[0], svgTree);
       // Fabric.js doesn't preserve group elements as individual objects
       // Groups are flattened, so we get zero bounds when group ID not found
       // This is acceptable since we primarily need bounds for rects, circles, text, etc.
@@ -57,10 +57,10 @@ describe('Recursive Height Update System', () => {
   describe('containsChangedElement', () => {
     it('should detect elements that contain the changed element', async () => {
       const svgTree = parseSVG(`
-        <svg width="100" height="200">
-          <rect width="100" height="200" fill="white" />
-          <rect x="0" y="0" width="100" height="180" />
-          <rect x="0" y="50" width="100" height="150" />
+        <svg id="svg3" width="100" height="200">
+          <rect id="rect1" width="100" height="200" fill="white" />
+          <rect id="rect2" x="0" y="0" width="100" height="180" />
+          <rect id="rect3" x="0" y="50" width="100" height="150" />
         </svg>
       `);
 
@@ -68,23 +68,23 @@ describe('Recursive Height Update System', () => {
       const changedElementBounds = { x: 10, y: 100, width: 80, height: 20 };
       
       // First rect: contains the changed element (y=0, height=200 fully contains y=100-120)
-      expect(await containsChangedElement(svgTree.children[0], changedElementBounds)).toBe(true);
+      expect(await containsChangedElement(svgTree.children[0], changedElementBounds, svgTree)).toBe(true);
       
       // Second rect: contains the changed element (y=0, height=180 fully contains y=100-120)
-      expect(await containsChangedElement(svgTree.children[1], changedElementBounds)).toBe(true);
+      expect(await containsChangedElement(svgTree.children[1], changedElementBounds, svgTree)).toBe(true);
       
       // Third rect: contains the changed element (y=50, height=150 → bottom=200, contains y=100-120)
-      expect(await containsChangedElement(svgTree.children[2], changedElementBounds)).toBe(true);
+      expect(await containsChangedElement(svgTree.children[2], changedElementBounds, svgTree)).toBe(true);
     });
 
     it('should detect non-containing elements', async () => {
       const svgTree = parseSVG(`
-        <svg width="100" height="200">
-          <rect x="0" y="0" width="100" height="50" />
-          <rect x="0" y="150" width="100" height="50" />
-          <text><tspan x="0" y="0">Text</tspan></text>
-          <g>
-            <rect width="100" height="200" />
+        <svg id="svg4" width="100" height="200">
+          <rect id="rect1" x="0" y="0" width="100" height="50" />
+          <rect id="rect2" x="0" y="150" width="100" height="50" />
+          <text id="text1"><tspan x="0" y="0">Text</tspan></text>
+          <g id="group1">
+            <rect id="rect3" width="100" height="200" />
           </g>
         </svg>
       `);
@@ -92,17 +92,19 @@ describe('Recursive Height Update System', () => {
       // Simulate a text element positioned at y=100 with height=20
       const changedElementBounds = { x: 10, y: 100, width: 80, height: 20 };
       
-      expect(await containsChangedElement(svgTree.children[0], changedElementBounds)).toBe(false); // rect above (y=0-50)
-      expect(await containsChangedElement(svgTree.children[1], changedElementBounds)).toBe(false); // rect below (y=150-200)
-      expect(await containsChangedElement(svgTree.children[2], changedElementBounds)).toBe(false); // text (no meaningful height)
-      expect(await containsChangedElement(svgTree.children[3], changedElementBounds)).toBe(true); // g (contains full-height rect)
+      expect(await containsChangedElement(svgTree.children[0], changedElementBounds, svgTree)).toBe(false); // rect above (y=0-50)
+      expect(await containsChangedElement(svgTree.children[1], changedElementBounds, svgTree)).toBe(false); // rect below (y=150-200)
+      expect(await containsChangedElement(svgTree.children[2], changedElementBounds, svgTree)).toBe(false); // text (no meaningful height)
+      
+      const group = svgTree.children[3];
+      expect(await containsChangedElement(group.children[0], changedElementBounds, svgTree)).toBe(true); // rect (contains full-height rect)
     });
 
     it('should handle edge cases with partial overlap', async () => {
       const svgTree = parseSVG(`
-        <svg width="100" height="200">
-          <rect x="0" y="0" width="100" height="110" />
-          <rect x="0" y="90" width="100" height="110" />
+        <svg id="svg5" width="100" height="200">
+          <rect id="rect1" x="0" y="0" width="100" height="110" />
+          <rect id="rect2" x="0" y="90" width="100" height="110" />
         </svg>
       `);
 
@@ -110,25 +112,25 @@ describe('Recursive Height Update System', () => {
       const changedElementBounds = { x: 10, y: 100, width: 80, height: 20 };
       
       // First rect: y=0-110, overlaps y=100-110 (10px out of 20px = 50% < 90%)
-      expect(await containsChangedElement(svgTree.children[0], changedElementBounds)).toBe(false);
+      expect(await containsChangedElement(svgTree.children[0], changedElementBounds, svgTree)).toBe(false);
       
       // Second rect: y=90-200, overlaps y=100-120 (20px out of 20px = 100% >= 90%)
-      expect(await containsChangedElement(svgTree.children[1], changedElementBounds)).toBe(true);
+      expect(await containsChangedElement(svgTree.children[1], changedElementBounds, svgTree)).toBe(true);
     });
   });
 
   describe('updateContainingSiblings', () => {
     it('should update heights of containing rect siblings', async () => {
       const svgTree = parseSVG(`
-        <svg width="100" height="200">
-          <rect width="100" height="200" fill="white" />
-          <rect x="10" y="10" width="80" height="30" />
+        <svg id="svg6" width="100" height="200">
+          <rect id="rect1" width="100" height="200" fill="white" />
+          <rect id="rect2" x="10" y="10" width="80" height="30" />
         </svg>
       `);
 
       // Simulate a text element that is contained in the first rect but not the second
       const changedElementBounds = { x: 20, y: 50, width: 60, height: 20 };
-      await updateContainingSiblings(svgTree, changedElementBounds, 50);
+      await updateContainingSiblings(svgTree, changedElementBounds, 50, svgTree);
 
       // First rect should be updated (contains the changed element)
       expect(svgTree.children[0].attributes.height).toBe('250');
@@ -139,18 +141,18 @@ describe('Recursive Height Update System', () => {
 
     it('should recursively update containing groups and their children', async () => {
       const svgTree = parseSVG(`
-        <svg width="100" height="200">
-          <g>
-            <rect width="100" height="200" fill="background" />
-            <rect x="10" y="10" width="80" height="30" fill="small" />
+        <svg id="svg7" width="100" height="200">
+          <g id="group1">
+            <rect id="rect1" width="100" height="200" fill="background" />
+            <rect id="rect2" x="10" y="10" width="80" height="30" fill="small" />
           </g>
-          <rect x="5" y="5" width="90" height="40" fill="other" />
+          <rect id="rect3" x="5" y="5" width="90" height="40" fill="other" />
         </svg>
       `);
 
       // Simulate a text element that is contained in the group
       const changedElementBounds = { x: 20, y: 100, width: 60, height: 20 };
-      await updateContainingSiblings(svgTree, changedElementBounds, 50);
+      await updateContainingSiblings(svgTree, changedElementBounds, 50, svgTree);
 
       // Group should be detected as containing the changed element and processed
       const group = svgTree.children[0];
@@ -169,13 +171,13 @@ describe('Recursive Height Update System', () => {
   describe('ClipPath Defs Update', () => {
     it('should update clipPath rectangles in defs when text expands', async () => {
       const svgWithClipPath = `
-        <svg width="390" height="626" viewBox="0 0 390 626">
+        <svg id="svg8" width="390" height="626" viewBox="0 0 390 626">
           <defs>
             <clipPath id="clip0_210_520">
-              <rect width="390" height="626" fill="white"/>
+              <rect id="clip-rect" width="390" height="626" fill="white"/>
             </clipPath>
           </defs>
-          <rect width="390" height="626" fill="url(#paint0_linear_210_520)"/>
+          <rect id="background-rect" width="390" height="626" fill="url(#paint0_linear_210_520)"/>
           <g id="Frame 32" clip-path="url(#clip0_210_520)">
             <text id="clipped-text" fill="#FDFDFD" font-family="Montserrat" font-size="12">
               <tspan x="16" y="479.802">Short text</tspan>
@@ -242,17 +244,17 @@ describe('Recursive Height Update System', () => {
 
     it('should handle multiple clipPaths in defs', async () => {
       const svgWithMultipleClipPaths = `
-        <svg width="400" height="500" viewBox="0 0 400 500">
+        <svg id="svg9" width="400" height="500" viewBox="0 0 400 500">
           <defs>
             <clipPath id="fullClip">
-              <rect width="400" height="500" fill="white"/>
+              <rect id="full-clip-rect" width="400" height="500" fill="white"/>
             </clipPath>
             <clipPath id="partialClip">
-              <rect x="0" y="100" width="400" height="200" fill="white"/>
+              <rect id="partial-clip-rect" x="0" y="100" width="400" height="200" fill="white"/>
             </clipPath>
           </defs>
-          <rect width="400" height="500" fill="white"/>
-          <g clip-path="url(#fullClip)">
+          <rect id="background-rect" width="400" height="500" fill="white"/>
+          <g id="clipped-group" clip-path="url(#fullClip)">
             <text id="text1" font-size="12">
               <tspan x="10" y="400">Expanding text</tspan>
             </text>
@@ -304,17 +306,17 @@ describe('Recursive Height Update System', () => {
 
     it('should only update clipPaths that are actually referenced', async () => {
       const svgWithUnusedClipPath = `
-        <svg width="400" height="500" viewBox="0 0 400 500">
+        <svg id="svg10" width="400" height="500" viewBox="0 0 400 500">
           <defs>
             <clipPath id="usedClip">
-              <rect width="400" height="500" fill="white"/>
+              <rect id="used-clip-rect" width="400" height="500" fill="white"/>
             </clipPath>
             <clipPath id="unusedClip">
-              <rect width="400" height="500" fill="white"/>
+              <rect id="unused-clip-rect" width="400" height="500" fill="white"/>
             </clipPath>
           </defs>
-          <rect width="400" height="500" fill="white"/>
-          <g clip-path="url(#usedClip)">
+          <rect id="background-rect" width="400" height="500" fill="white"/>
+          <g id="clipped-group" clip-path="url(#usedClip)">
             <text id="text1" font-size="12">
               <tspan x="10" y="400">Expanding text</tspan>
             </text>
@@ -368,8 +370,8 @@ describe('Recursive Height Update System', () => {
   describe('Tricky Nested Structure', () => {
     it('should handle complex nested containers with text expansion', async () => {
       const trickySvg = `
-        <svg width="390" height="626" viewBox="0 0 390 626">
-          <rect width="390" height="626" fill="url(#paint0_linear_210_520)"/>
+        <svg id="svg11" width="390" height="626" viewBox="0 0 390 626">
+          <rect id="background-rect" width="390" height="626" fill="url(#paint0_linear_210_520)"/>
           <g id="text-container">
             <text id="long-text" fill="#FDFDFD" font-family="Montserrat" font-size="12">
               <tspan x="16" y="479.802">Short text</tspan>
@@ -443,9 +445,9 @@ describe('Recursive Height Update System', () => {
     it('should preserve non-background elements unchanged', async () => {
       const svgWithMixedElements = `
         <svg width="200" height="300" viewBox="0 0 200 300">
-          <rect width="200" height="300" fill="white"/>
-          <rect x="10" y="10" width="50" height="50" fill="blue"/>
-          <circle cx="100" cy="100" r="20" fill="red"/>
+          <rect id="background-rect" width="200" height="300" fill="white"/>
+          <rect id="blue-rect" x="10" y="10" width="50" height="50" fill="blue"/>
+          <circle id="red-circle" cx="100" cy="100" r="20" fill="red"/>
           <text id="expand-text" font-size="12">
             <tspan x="10" y="200">Text to expand</tspan>
           </text>
@@ -503,16 +505,16 @@ describe('Recursive Height Update System', () => {
 
     it('should handle multiple text expansions independently', async () => {
       const svgWithMultipleTexts = `
-        <svg width="400" height="500">
-          <rect width="400" height="500" fill="white"/>
+        <svg id="svg12" width="400" height="500">
+          <rect id="main-background" width="400" height="500" fill="white"/>
           <g id="section1">
-            <rect width="400" height="200" fill="lightblue"/>
+            <rect id="section1-bg" width="400" height="200" fill="lightblue"/>
             <text id="text1" font-size="12">
               <tspan x="10" y="50">First text</tspan>
             </text>
           </g>
           <g id="section2">
-            <rect width="400" height="200" fill="lightgreen"/>
+            <rect id="section2-bg" width="400" height="200" fill="lightgreen"/>
             <text id="text2" font-size="12">
               <tspan x="10" y="300">Second text</tspan>
             </text>
@@ -574,9 +576,9 @@ describe('Recursive Height Update System', () => {
     it('should handle deeply nested containers with proper bubbling', async () => {
       // Test the original tricky structure where rect is at a different nesting level
       const deeplyNestedSvg = `
-        <svg width="390" height="626" viewBox="0 0 390 626">
+        <svg id="svg13" width="390" height="626" viewBox="0 0 390 626">
           <g id="Frame 32">
-            <rect width="390" height="626" fill="white"/>
+            <rect id="background-rect" width="390" height="626" fill="white"/>
             <g id="text-container">
               <text id="nested-text" font-size="12">
                 <tspan x="16" y="479.802">Short</tspan>

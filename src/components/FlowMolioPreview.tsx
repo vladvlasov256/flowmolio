@@ -52,7 +52,6 @@ export const FlowMolioPreview: React.FC<FlowMolioPreviewProps> = ({
           setIsLoading(false);
         })
         .catch(error => {
-          console.error('FlowMolio rendering error:', error);
           setRenderedSvg(`<div>Rendering error: ${error.message}</div>`);
           setIsLoading(false);
         });
