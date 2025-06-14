@@ -52,18 +52,18 @@ function getValueFromPath(obj: JSONValue, path: string): JSONValue | undefined {
 /**
  * Applies text data bindings and handles text layout changes
  */
-function applyTextDataBindings({
+async function applyTextDataBindings({
   svgTree,
   connections,
   dataSources,
   components = [],
-}: DataBindingContext): void {
+}: DataBindingContext): Promise<void> {
   // Process each connection for text components only
-  connections.forEach(connection => {
+  for (const connection of connections) {
     // Find the target component
     const targetComponent = components.find(component => component.id === connection.targetNodeId);
     if (!targetComponent || targetComponent.type !== 'text') {
-      return;
+      continue;
     }
 
     const elementId = targetComponent.elementId;
@@ -182,7 +182,7 @@ function applyTextDataBindings({
           // If height changed, shift elements below and update container hierarchy
           if (heightDelta !== 0) {
             shiftElementsBelow(svgTree, y, heightDelta);
-            handleTextHeightChange(svgTree, targetElement, heightDelta);
+            await handleTextHeightChange(svgTree, targetElement, heightDelta);
           }
         } else {
           // Natural strategy - use existing behavior
@@ -203,7 +203,7 @@ function applyTextDataBindings({
 
     // Also update textContent for compatibility
     targetElement.textContent = dataString;
-  });
+  }
 }
 
 /**
@@ -332,9 +332,9 @@ function applyColorDataBindings({
 /**
  * Applies data bindings from data source to SVG elements
  */
-export function applyDataBindings(context: DataBindingContext): void {
+export async function applyDataBindings(context: DataBindingContext): Promise<void> {
   // Apply text data bindings (each text element handles its own container updates)
-  applyTextDataBindings(context);
+  await applyTextDataBindings(context);
 
   // Apply image data bindings
   applyImageDataBindings(context);

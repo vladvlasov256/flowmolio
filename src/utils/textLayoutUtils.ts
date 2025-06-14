@@ -99,55 +99,41 @@ export function calculateTextElementHeight(
 }
 
 /**
- * Shifts elements whose bottom is below the given y-coordinate
+ * Shifts elements whose top is below the given y-coordinate
  */
 export function shiftElementsBelow(svgTree: SVGElementNode, belowY: number, deltaY: number): void {
   function processElement(element: SVGElementNode): void {
-    // Check if element has a y coordinate and calculate its bottom
+    // Check if element has a y coordinate - shift if element's top is below threshold
     const yAttr = element.attributes.y;
     if (yAttr) {
       const y = parseFloat(yAttr);
-      const heightAttr = element.attributes.height;
-      let elementBottom = y;
-
-      if (heightAttr) {
-        // Element has explicit height
-        elementBottom = y + parseFloat(heightAttr);
-      } else {
-        // For elements without height, use the y coordinate as approximation
-        elementBottom = y;
-      }
-
-      if (elementBottom > belowY) {
+      
+      // Element is below if its top position is below the threshold
+      if (y > belowY) {
         element.attributes.y = String(y + deltaY);
       }
     }
 
-    // Check for cy attribute (circles) - bottom is cy + r
+    // Check for cy attribute (circles) - shift if center is below threshold
     const cyAttr = element.attributes.cy;
     if (cyAttr) {
       const cy = parseFloat(cyAttr);
-      const rAttr = element.attributes.r;
-      let elementBottom = cy;
-
-      if (rAttr) {
-        elementBottom = cy + parseFloat(rAttr);
-      }
-
-      if (elementBottom > belowY) {
+      
+      // Circle is below if its center is below the threshold
+      if (cy > belowY) {
         element.attributes.cy = String(cy + deltaY);
       }
     }
 
-    // Check for other y-based attributes (lines) - use the lower y coordinate as bottom
+    // Check for other y-based attributes (lines) - shift if any point is below threshold
     const y1Attr = element.attributes.y1;
     const y2Attr = element.attributes.y2;
     if (y1Attr && y2Attr) {
       const y1 = parseFloat(y1Attr);
       const y2 = parseFloat(y2Attr);
-      const elementBottom = Math.max(y1, y2);
-
-      if (elementBottom > belowY) {
+      
+      // Line is below if any of its endpoints is below the threshold
+      if (y1 > belowY || y2 > belowY) {
         element.attributes.y1 = String(y1 + deltaY);
         element.attributes.y2 = String(y2 + deltaY);
       }
@@ -164,13 +150,14 @@ export function shiftElementsBelow(svgTree: SVGElementNode, belowY: number, delt
     }
 
     // Check transform translate for elements positioned via transform
-    // Note: For transformed elements, we check the y coordinate since height is not easily determinable
     const transformAttr = element.attributes.transform;
     if (transformAttr) {
       const translateMatch = transformAttr.match(/translate\(([^,)\s]+)[\s,]+([^)]+)\)/);
       if (translateMatch) {
         const x = parseFloat(translateMatch[1]);
         const y = parseFloat(translateMatch[2]);
+        
+        // Transform is below if its y translation is below the threshold
         if (y > belowY) {
           element.attributes.transform = transformAttr.replace(
             /translate\([^)]+\)/,
@@ -180,7 +167,7 @@ export function shiftElementsBelow(svgTree: SVGElementNode, belowY: number, delt
       }
     }
 
-    // Handle path elements - check if any y coordinate in the path is below the threshold
+    // Handle path elements - check if the path's top-most y coordinate is below the threshold
     // Note: This is an approximation since calculating path bounds is complex
     if (element.tagName === 'path' && element.attributes.d) {
       const pathData = element.attributes.d;
@@ -189,21 +176,19 @@ export function shiftElementsBelow(svgTree: SVGElementNode, belowY: number, delt
         /[MLCQSTAZmlcqstaz][\s,]*[^MLCQSTAZmlcqstaz]*?[\s,]+([0-9.-]+)/g,
       );
       if (yMatches) {
-        let shouldShift = false;
+        let minY = Infinity;
 
-        // Check if any y coordinate in the path is below the threshold
+        // Find the minimum y coordinate in the path (top-most point)
         for (const match of yMatches) {
           const coords = match.match(/([0-9.-]+)/g);
           if (coords && coords.length >= 2) {
             const y = parseFloat(coords[1]); // y is typically the second coordinate
-            if (y > belowY) {
-              shouldShift = true;
-              break;
-            }
+            minY = Math.min(minY, y);
           }
         }
 
-        if (shouldShift) {
+        // Shift if the path's top-most point is below the threshold
+        if (minY !== Infinity && minY > belowY) {
           // Add or update transform translate for the path
           if (element.attributes.transform) {
             const existingTransform = element.attributes.transform;
@@ -233,6 +218,7 @@ export function shiftElementsBelow(svgTree: SVGElementNode, belowY: number, delt
         /<tspan([^>]*)y="([^"]*)"([^>]*)/g,
         (match, before, yValue, after) => {
           const y = parseFloat(yValue);
+          // Shift tspan if its y coordinate is below the threshold
           if (y > belowY) {
             return `<tspan${before}y="${y + deltaY}"${after}`;
           }
@@ -248,65 +234,3 @@ export function shiftElementsBelow(svgTree: SVGElementNode, belowY: number, delt
   processElement(svgTree);
 }
 
-/**
- * Detects if an element is likely a full-height background element
- */
-function isFullHeightElement(element: SVGElementNode, svgHeight: number): boolean {
-  const heightAttr = element.attributes.height;
-  const yAttr = element.attributes.y;
-
-  if (!heightAttr) return false;
-
-  const height = parseFloat(heightAttr);
-  const y = yAttr ? parseFloat(yAttr) : 0;
-
-  // Simple and reliable heuristics:
-
-  // 1. Height is close to or larger than SVG height (within 10% tolerance)
-  const heightRatio = height / svgHeight;
-  if (heightRatio < 0.9) return false;
-
-  // 2. Element starts at or near the top (y <= 10)
-  if (y > 10) return false;
-
-  return true;
-}
-
-/**
- * Updates heights of full-height background elements and SVG dimensions
- *
- * When text content expands and increases the overall document height, we need to:
- * 1. Expand background elements (like full-height rectangles) to maintain visual consistency
- * 2. Update the SVG container dimensions to accommodate the new content
- * 3. Update the viewBox to ensure proper coordinate mapping
- *
- * This prevents backgrounds from being too short and content from being clipped.
- */
-export function updateFullHeightElements(
-  svgTree: SVGElementNode,
-  deltaHeight: number,
-  originalSvgHeight: number,
-): void {
-  function processElement(element: SVGElementNode): void {
-    if (isFullHeightElement(element, originalSvgHeight)) {
-      const currentHeight = parseFloat(element.attributes.height);
-      const newHeight = Math.max(0, currentHeight + deltaHeight);
-      element.attributes.height = String(newHeight);
-    }
-
-    // If this is the SVG root element, also update viewBox
-    if (element.tagName === 'svg' && element.attributes.viewBox) {
-      const viewBoxParts = element.attributes.viewBox.split(/\s+/);
-      if (viewBoxParts.length === 4) {
-        const [minX, minY, width, height] = viewBoxParts.map(parseFloat);
-        const newHeight = Math.max(0, height + deltaHeight);
-        element.attributes.viewBox = `${minX} ${minY} ${width} ${newHeight}`;
-      }
-    }
-
-    // Recursively process children
-    element.children.forEach(processElement);
-  }
-
-  processElement(svgTree);
-}

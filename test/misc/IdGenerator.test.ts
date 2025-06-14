@@ -2,12 +2,12 @@ import { IdGenerator } from '../../src/utils/IdGenerator';
 
 describe('IdGenerator', () => {
   describe('Constructor', () => {
-    it('should create instance with empty existing IDs when no parameter provided', () => {
+    it('should create instance with empty existing IDs when no parameter provided', async () => {
       const generator = new IdGenerator();
       expect(generator.next('div')).toBe('fmo-div-1');
     });
 
-    it('should create instance with provided existing IDs', () => {
+    it('should create instance with provided existing IDs', async () => {
       const existingIds = new Set(['fmo-div-1', 'fmo-span-1']);
       const generator = new IdGenerator(existingIds);
 
@@ -18,7 +18,7 @@ describe('IdGenerator', () => {
   });
 
   describe('fromSVGString', () => {
-    it('should extract existing IDs from SVG string', () => {
+    it('should extract existing IDs from SVG string', async () => {
       const svgString = `
         <svg>
           <rect id="rect1" />
@@ -35,7 +35,7 @@ describe('IdGenerator', () => {
       expect(generator.next('text')).toBe('fmo-text-1');
     });
 
-    it('should handle SVG with no IDs', () => {
+    it('should handle SVG with no IDs', async () => {
       const svgString = '<svg><rect /><circle /></svg>';
       const generator = IdGenerator.fromSVGString(svgString);
 
@@ -43,12 +43,12 @@ describe('IdGenerator', () => {
       expect(generator.next('circle')).toBe('fmo-circle-1');
     });
 
-    it('should handle empty SVG string', () => {
+    it('should handle empty SVG string', async () => {
       const generator = IdGenerator.fromSVGString('');
       expect(generator.next('div')).toBe('fmo-div-1');
     });
 
-    it('should extract IDs with special characters', () => {
+    it('should extract IDs with special characters', async () => {
       const svgString = '<svg><rect id="my-id_123" /><circle id="fmo-circle-1" /></svg>';
       const generator = IdGenerator.fromSVGString(svgString);
 
@@ -58,7 +58,7 @@ describe('IdGenerator', () => {
   });
 
   describe('reset', () => {
-    it('should reset hierarchy counters and depth', () => {
+    it('should reset hierarchy counters and depth', async () => {
       const generator = new IdGenerator();
 
       generator.enterLevel();
@@ -73,7 +73,7 @@ describe('IdGenerator', () => {
       expect(generator.next('span')).toBe('fmo-span-1:1');
     });
 
-    it('should preserve existing IDs after reset', () => {
+    it('should preserve existing IDs after reset', async () => {
       const existingIds = new Set(['fmo-div-1']);
       const generator = new IdGenerator(existingIds);
 
@@ -87,7 +87,7 @@ describe('IdGenerator', () => {
   });
 
   describe('enterLevel and exitLevel', () => {
-    it('should track depth levels correctly', () => {
+    it('should track depth levels correctly', async () => {
       const generator = new IdGenerator();
 
       // Level 0
@@ -107,7 +107,7 @@ describe('IdGenerator', () => {
       expect(generator.next('div')).toBe('fmo-div-2:1');
     });
 
-    it('should handle exitLevel when already at depth 0', () => {
+    it('should handle exitLevel when already at depth 0', async () => {
       const generator = new IdGenerator();
 
       // Should not crash when exiting at depth 0
@@ -117,7 +117,7 @@ describe('IdGenerator', () => {
       expect(generator.next('div')).toBe('fmo-div-1');
     });
 
-    it('should maintain separate counters per level', () => {
+    it('should maintain separate counters per level', async () => {
       const generator = new IdGenerator();
 
       // Level 0
@@ -136,7 +136,7 @@ describe('IdGenerator', () => {
   });
 
   describe('next', () => {
-    it('should generate sequential IDs for same tag type', () => {
+    it('should generate sequential IDs for same tag type', async () => {
       const generator = new IdGenerator();
 
       expect(generator.next('div')).toBe('fmo-div-1');
@@ -144,7 +144,7 @@ describe('IdGenerator', () => {
       expect(generator.next('div')).toBe('fmo-div-3');
     });
 
-    it('should generate separate counters for different tag types', () => {
+    it('should generate separate counters for different tag types', async () => {
       const generator = new IdGenerator();
 
       expect(generator.next('div')).toBe('fmo-div-1');
@@ -153,7 +153,7 @@ describe('IdGenerator', () => {
       expect(generator.next('span')).toBe('fmo-span-2');
     });
 
-    it('should handle collision detection with existing IDs', () => {
+    it('should handle collision detection with existing IDs', async () => {
       const existingIds = new Set(['fmo-div-1', 'fmo-div-2', 'fmo-div-2-1']);
       const generator = new IdGenerator(existingIds);
 
@@ -161,14 +161,14 @@ describe('IdGenerator', () => {
       expect(generator.next('div')).toBe('fmo-div-2:1');
     });
 
-    it('should handle collision with suffix conflicts', () => {
+    it('should handle collision with suffix conflicts', async () => {
       const existingIds = new Set(['fmo-div-1', 'fmo-div-1-1', 'fmo-div-1-2']);
       const generator = new IdGenerator(existingIds);
 
       expect(generator.next('div')).toBe('fmo-div-1:1');
     });
 
-    it('should add generated IDs to existing set to prevent future collisions', () => {
+    it('should add generated IDs to existing set to prevent future collisions', async () => {
       const generator = new IdGenerator();
 
       const firstId = generator.next('div');
@@ -182,7 +182,7 @@ describe('IdGenerator', () => {
       expect(newGenerator.next('div')).toBe('fmo-div-1:1');
     });
 
-    it('should handle complex tag names', () => {
+    it('should handle complex tag names', async () => {
       const generator = new IdGenerator();
 
       expect(generator.next('custom-element')).toBe('fmo-custom-element-1');
@@ -190,7 +190,7 @@ describe('IdGenerator', () => {
       expect(generator.next('data-123')).toBe('fmo-data-123-1');
     });
 
-    it('should ensure counter maps exist for current depth', () => {
+    it('should ensure counter maps exist for current depth', async () => {
       const generator = new IdGenerator();
 
       // Jump to deep level without calling enterLevel
@@ -203,7 +203,7 @@ describe('IdGenerator', () => {
   });
 
   describe('Integration scenarios', () => {
-    it('should handle complex workflow with multiple levels and resets', () => {
+    it('should handle complex workflow with multiple levels and resets', async () => {
       const existingIds = new Set(['fmo-div-1', 'fmo-span-2']);
       const generator = new IdGenerator(existingIds);
 
@@ -222,7 +222,7 @@ describe('IdGenerator', () => {
       expect(generator.next('span')).toBe('fmo-span-1:2');
     });
 
-    it('should handle SVG extraction with subsequent generation', () => {
+    it('should handle SVG extraction with subsequent generation', async () => {
       const svgString = `
         <svg>
           <g id="fmo-g-1">

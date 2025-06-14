@@ -71,7 +71,7 @@ describe('convertBlueprintToLayout', () => {
     ]
   };
 
-  it('should convert blueprint to layout correctly', () => {
+  it('should convert blueprint to layout correctly', async () => {
     const layout = convertBlueprintToLayout(mockBlueprint);
 
     expect(layout.svg).toBe(mockBlueprint.svg);
@@ -122,7 +122,7 @@ describe('convertBlueprintToLayout', () => {
     ]);
   });
 
-  it('should filter out non-component nodes', () => {
+  it('should filter out non-component nodes', async () => {
     const blueprint: Blueprint = {
       svg: '<svg></svg>',
       nodes: [
@@ -170,7 +170,7 @@ describe('convertBlueprintToLayout', () => {
     });
   });
 
-  it('should handle missing sourceHandle in edges', () => {
+  it('should handle missing sourceHandle in edges', async () => {
     const blueprint: Blueprint = {
       svg: '<svg></svg>',
       nodes: [
@@ -203,7 +203,7 @@ describe('convertBlueprintToLayout', () => {
     expect(layout.connections[0].sourceField).toBe('');
   });
 
-  it('should handle missing color node data gracefully', () => {
+  it('should handle missing color node data gracefully', async () => {
     const blueprint: Blueprint = {
       svg: '<svg></svg>',
       nodes: [
@@ -234,7 +234,7 @@ describe('convertBlueprintToLayout', () => {
     });
   });
 
-  it('should handle empty blueprint', () => {
+  it('should handle empty blueprint', async () => {
     const blueprint: Blueprint = {
       svg: '<svg></svg>',
       nodes: [],
@@ -248,7 +248,7 @@ describe('convertBlueprintToLayout', () => {
     expect(layout.components).toEqual([]);
   });
 
-  it('should include renderingStrategy in text layout components', () => {
+  it('should include renderingStrategy in text layout components', async () => {
     const blueprint: Blueprint = {
       svg: '<svg><text id="title">Hello</text></svg>',
       nodes: [
@@ -286,7 +286,7 @@ describe('convertBlueprintToLayout', () => {
     });
   });
 
-  it('should handle text layout components with natural rendering strategy', () => {
+  it('should handle text layout components with natural rendering strategy', async () => {
     const blueprint: Blueprint = {
       svg: '<svg><text id="title">Hello</text></svg>',
       nodes: [
@@ -322,7 +322,7 @@ describe('convertBlueprintToLayout', () => {
     });
   });
 
-  it('should handle text layout components without renderingStrategy', () => {
+  it('should handle text layout components without renderingStrategy', async () => {
     const blueprint: Blueprint = {
       svg: '<svg><text id="title">Hello</text></svg>',
       nodes: [

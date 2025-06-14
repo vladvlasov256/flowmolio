@@ -10,7 +10,7 @@ describe('renderFlowMolio - Texts', () => {
       </svg>
     `;
 
-    it('should apply text data binding correctly', () => {
+    it('should apply text data binding correctly', async () => {
       const textComponent: Component = {
         id: 'node1',
         type: 'text',
@@ -38,13 +38,13 @@ describe('renderFlowMolio - Texts', () => {
         data1: { title: 'New Text' },
       };
 
-      const result = renderFlowMolio(layout, dataSources);
+      const result = await renderFlowMolio(layout, dataSources);
       expect(result).toEqual(
         `<svg id="fmo-svg-1" width="100" height="100"><text id="text1"><tspan x="0" y="0">New Text</tspan></text><text id="text2"><tspan x="0" y="0">Another Text</tspan></text></svg>`,
       );
     });
 
-    it('should handle nested data paths with dot notation', () => {
+    it('should handle nested data paths with dot notation', async () => {
       const textComponent: Component = {
         id: 'node1',
         type: 'text',
@@ -76,13 +76,13 @@ describe('renderFlowMolio - Texts', () => {
         },
       };
 
-      const result = renderFlowMolio(layout, dataSources);
+      const result = await renderFlowMolio(layout, dataSources);
       expect(result).toEqual(
         `<svg id="fmo-svg-1" width="100" height="100"><text id="text1"><tspan x="0" y="0">Nested Product Name</tspan></text><text id="text2"><tspan x="0" y="0">Another Text</tspan></text></svg>`,
       );
     });
 
-    it('should handle missing data sources gracefully', () => {
+    it('should handle missing data sources gracefully', async () => {
       const textComponent: Component = {
         id: 'node1',
         type: 'text',
@@ -108,13 +108,13 @@ describe('renderFlowMolio - Texts', () => {
 
       const dataSources: DataSources = {};
 
-      const result = renderFlowMolio(layout, dataSources);
+      const result = await renderFlowMolio(layout, dataSources);
       expect(result).toEqual(
         `<svg id="fmo-svg-1" width="100" height="100"><text id="text1"><tspan x="0" y="0">Original Text</tspan></text><text id="text2"><tspan x="0" y="0">Another Text</tspan></text></svg>`,
       );
     });
 
-    it('should handle missing fields in data sources', () => {
+    it('should handle missing fields in data sources', async () => {
       const textComponent: Component = {
         id: 'node1',
         type: 'text',
@@ -142,7 +142,7 @@ describe('renderFlowMolio - Texts', () => {
         data1: { title: 'Available Title' },
       };
 
-      const result = renderFlowMolio(layout, dataSources);
+      const result = await renderFlowMolio(layout, dataSources);
       expect(result).toEqual(
         `<svg id="fmo-svg-1" width="100" height="100"><text id="text1"><tspan x="0" y="0">Original Text</tspan></text><text id="text2"><tspan x="0" y="0">Another Text</tspan></text></svg>`,
       );
@@ -156,7 +156,7 @@ describe('renderFlowMolio - Texts', () => {
       </svg>
     `;
 
-    it('should break long text into multiple lines for constrained width', () => {
+    it('should break long text into multiple lines for constrained width', async () => {
       const textComponent: Component = {
         id: 'node1',
         type: 'text',
@@ -185,7 +185,7 @@ describe('renderFlowMolio - Texts', () => {
         data1: { longText: 'This is a very long text that should be broken into multiple lines' },
       };
 
-      const result = renderFlowMolio(layout, dataSources);
+      const result = await renderFlowMolio(layout, dataSources);
       
       // Should contain multiple tspan elements with different y coordinates
       expect(result).toContain('<tspan x="10" y="20"');
@@ -195,7 +195,7 @@ describe('renderFlowMolio - Texts', () => {
       expect(tspanCount).toBeGreaterThan(1);
     });
 
-    it('should handle short text with constrained width without breaking', () => {
+    it('should handle short text with constrained width without breaking', async () => {
       const textComponent: Component = {
         id: 'node1',
         type: 'text',
@@ -224,7 +224,7 @@ describe('renderFlowMolio - Texts', () => {
         data1: { shortText: 'Short' },
       };
 
-      const result = renderFlowMolio(layout, dataSources);
+      const result = await renderFlowMolio(layout, dataSources);
       
       // Should contain only one tspan element
       const tspanCount = (result.match(/<tspan/g) || []).length;
@@ -232,7 +232,7 @@ describe('renderFlowMolio - Texts', () => {
       expect(result).toContain('Short');
     });
 
-    it('should preserve original font attributes in constrained width mode', () => {
+    it('should preserve original font attributes in constrained width mode', async () => {
       const mockSvgWithAttributes = `
         <svg width="100" height="100">
           <text id="text1"><tspan x="10" y="20" font-family="Times" font-size="14" font-weight="bold" fill="red">Original Text</tspan></text>
@@ -267,7 +267,7 @@ describe('renderFlowMolio - Texts', () => {
         data1: { text: 'Test text for styling' },
       };
 
-      const result = renderFlowMolio(layout, dataSources);
+      const result = await renderFlowMolio(layout, dataSources);
       
       // Should preserve font attributes
       expect(result).toContain('font-family="Times"');
@@ -276,7 +276,7 @@ describe('renderFlowMolio - Texts', () => {
       expect(result).toContain('fill="red"');
     });
 
-    it('should apply line spacing when specified in SVG attributes', () => {
+    it('should apply line spacing when specified in SVG attributes', async () => {
       const mockSvgWithLineSpacing = `
         <svg width="100" height="100">
           <text id="text1"><tspan x="10" y="20" font-family="Arial" font-size="12" line-spacing="18">Original Text</tspan></text>
@@ -311,7 +311,7 @@ describe('renderFlowMolio - Texts', () => {
         data1: { text: 'This is a longer text that should be broken into multiple lines with custom spacing' },
       };
 
-      const result = renderFlowMolio(layout, dataSources);
+      const result = await renderFlowMolio(layout, dataSources);
       
       // Should have multiple lines with increased spacing
       const tspanMatches = result.match(/<tspan[^>]*y="([^"]*)"[^>]*>/g);
@@ -332,7 +332,7 @@ describe('renderFlowMolio - Texts', () => {
       }
     });
 
-    it('should use line-height attribute as alternative to line-spacing', () => {
+    it('should use line-height attribute as alternative to line-spacing', async () => {
       const mockSvgWithLineHeight = `
         <svg width="100" height="100">
           <text id="text1"><tspan x="10" y="20" font-family="Arial" font-size="12" line-height="20">Original Text</tspan></text>
@@ -367,7 +367,7 @@ describe('renderFlowMolio - Texts', () => {
         data1: { text: 'This is a longer text that should be broken into multiple lines' },
       };
 
-      const result = renderFlowMolio(layout, dataSources);
+      const result = await renderFlowMolio(layout, dataSources);
       
       // Should have multiple lines with line height spacing
       const tspanMatches = result.match(/<tspan[^>]*y="([^"]*)"[^>]*>/g);
@@ -388,7 +388,7 @@ describe('renderFlowMolio - Texts', () => {
       }
     });
 
-    it('should calculate line height from existing tspan y-coordinates', () => {
+    it('should calculate line height from existing tspan y-coordinates', async () => {
       const mockSvgWithMultipleTspans = `
         <svg width="100" height="100">
           <text id="text1">
@@ -426,7 +426,7 @@ describe('renderFlowMolio - Texts', () => {
         data1: { text: 'This is a longer text that should use the original line height spacing' },
       };
 
-      const result = renderFlowMolio(layout, dataSources);
+      const result = await renderFlowMolio(layout, dataSources);
       
       // Should have multiple lines with the original line height (35 - 20 = 15)
       const tspanMatches = result.match(/<tspan[^>]*y="([^"]*)"[^>]*>/g);
@@ -446,7 +446,7 @@ describe('renderFlowMolio - Texts', () => {
       }
     });
 
-    it('should fallback to font size estimate when only one tspan exists', () => {
+    it('should fallback to font size estimate when only one tspan exists', async () => {
       const mockSvgWithSingleTspan = `
         <svg width="100" height="100">
           <text id="text1">
@@ -483,7 +483,7 @@ describe('renderFlowMolio - Texts', () => {
         data1: { text: 'This is a longer text that should use font size fallback' },
       };
 
-      const result = renderFlowMolio(layout, dataSources);
+      const result = await renderFlowMolio(layout, dataSources);
       
       // Should have multiple lines with font size based line height (16 * 1.2 = 19.2)
       const tspanMatches = result.match(/<tspan[^>]*y="([^"]*)"[^>]*>/g);
@@ -505,7 +505,7 @@ describe('renderFlowMolio - Texts', () => {
   });
 
   describe('Height adjustment for constrained text', () => {
-    it('should shift elements below when text height increases', () => {
+    it('should shift elements below when text height increases', async () => {
       const mockSvgWithElementsBelow = `
         <svg width="200" height="100">
           <text id="text1"><tspan x="10" y="20" font-family="Arial" font-size="12">Short</tspan></text>
@@ -542,7 +542,7 @@ describe('renderFlowMolio - Texts', () => {
         data1: { longText: 'This is a much longer text that will definitely span multiple lines and increase the overall height' },
       };
 
-      const result = renderFlowMolio(layout, dataSources);
+      const result = await renderFlowMolio(layout, dataSources);
       
       // Elements below should be shifted down
       // Original rect was at y="40", should now be at a higher y value
@@ -564,7 +564,7 @@ describe('renderFlowMolio - Texts', () => {
       expect(svgHeight).toBeGreaterThan(100);
     });
 
-    it('should handle elements positioned with transform translate', () => {
+    it('should handle elements positioned with transform translate', async () => {
       const mockSvgWithTransforms = `
         <svg width="200" height="100">
           <text id="text1"><tspan x="10" y="20" font-family="Arial" font-size="12">Short</tspan></text>
@@ -602,7 +602,7 @@ describe('renderFlowMolio - Texts', () => {
         data1: { longText: 'This is another long text that will cause height changes' },
       };
 
-      const result = renderFlowMolio(layout, dataSources);
+      const result = await renderFlowMolio(layout, dataSources);
       
       // Transform translate should be adjusted
       const transformMatch = result.match(/transform="translate\(([^,)]+),\s*([^)]+)\)"/);
@@ -611,7 +611,7 @@ describe('renderFlowMolio - Texts', () => {
       expect(translateY).toBeGreaterThan(50);
     });
 
-    it('should not shift elements that are above the text', () => {
+    it('should not shift elements that are above the text', async () => {
       const mockSvgWithElementsAbove = `
         <svg width="200" height="120">
           <rect x="10" y="5" width="50" height="10" fill="blue" />
@@ -648,7 +648,7 @@ describe('renderFlowMolio - Texts', () => {
         data1: { longText: 'This text will expand and should only affect elements below' },
       };
 
-      const result = renderFlowMolio(layout, dataSources);
+      const result = await renderFlowMolio(layout, dataSources);
       
       // First rect (above text) should remain at y="5"
       const firstRectMatch = result.match(/<rect[^>]*y="5"[^>]*>/);
@@ -669,7 +669,7 @@ describe('renderFlowMolio - Texts', () => {
       expect(rectYValues[1]).toBeGreaterThan(50); // Second rect shifted
     });
 
-    it('should not add height attribute to SVG without one', () => {
+    it('should not add height attribute to SVG without one', async () => {
       const mockSvgWithoutHeight = `
         <svg width="200">
           <text id="text1"><tspan x="10" y="20" font-family="Arial" font-size="12">Short</tspan></text>
@@ -705,7 +705,7 @@ describe('renderFlowMolio - Texts', () => {
         data1: { longText: 'This is a much longer text that will definitely span multiple lines' },
       };
 
-      const result = renderFlowMolio(layout, dataSources);
+      const result = await renderFlowMolio(layout, dataSources);
       
       // SVG should still not have a height attribute
       const svgMatch = result.match(/<svg[^>]*>/);
@@ -719,7 +719,7 @@ describe('renderFlowMolio - Texts', () => {
       expect(rectY).toBeGreaterThan(40);
     });
 
-    it('should update viewBox height when SVG has viewBox attribute', () => {
+    it('should update viewBox height when SVG has viewBox attribute', async () => {
       const mockSvgWithViewBox = `
         <svg width="200" height="100" viewBox="0 0 200 100">
           <text id="text1"><tspan x="10" y="20" font-family="Arial" font-size="12">Short</tspan></text>
@@ -755,7 +755,7 @@ describe('renderFlowMolio - Texts', () => {
         data1: { longText: 'This is a much longer text that will definitely span multiple lines and increase the viewBox height' },
       };
 
-      const result = renderFlowMolio(layout, dataSources);
+      const result = await renderFlowMolio(layout, dataSources);
       
       // SVG height should be increased
       const svgMatch = result.match(/<svg[^>]*height="([^"]*)"[^>]*>/);
@@ -780,7 +780,7 @@ describe('renderFlowMolio - Texts', () => {
       expect(viewBoxHeight).toBeGreaterThan(100);
     });
 
-    it('should shift path elements by adding transform attribute', () => {
+    it('should shift path elements by adding transform attribute', async () => {
       const mockSvgWithPath = `
         <svg width="200" height="100">
           <text id="text1"><tspan x="10" y="20" font-family="Arial" font-size="12">Short</tspan></text>
@@ -816,7 +816,7 @@ describe('renderFlowMolio - Texts', () => {
         data1: { longText: 'This is a much longer text that will definitely span multiple lines and push the path down' },
       };
 
-      const result = renderFlowMolio(layout, dataSources);
+      const result = await renderFlowMolio(layout, dataSources);
       
       // Path should have a transform attribute added to shift it
       const pathMatch = result.match(/<path[^>]*transform="translate\(0,\s*([^)]+)\)"[^>]*>/);
@@ -828,7 +828,7 @@ describe('renderFlowMolio - Texts', () => {
       expect(result).toContain('d="M 10 50 L 60 50 L 35 80 Z"');
     });
 
-    it('should update existing transform on path elements', () => {
+    it('should update existing transform on path elements', async () => {
       const mockSvgWithTransformedPath = `
         <svg width="200" height="100">
           <text id="text1"><tspan x="10" y="20" font-family="Arial" font-size="12">Short</tspan></text>
@@ -864,7 +864,7 @@ describe('renderFlowMolio - Texts', () => {
         data1: { longText: 'This is another long text that will cause the path to be shifted down while preserving its existing transform' },
       };
 
-      const result = renderFlowMolio(layout, dataSources);
+      const result = await renderFlowMolio(layout, dataSources);
       
       // Path should have both the translate and original scale transform
       const pathMatch = result.match(/<path[^>]*transform="translate\(0,\s*([^)]+)\) scale\(1\.5\)"[^>]*>/);
@@ -874,7 +874,7 @@ describe('renderFlowMolio - Texts', () => {
     });
   });
 
-  it('should apply text data binding correctly to text elements without ids', () => {
+  it('should apply text data binding correctly to text elements without ids', async () => {
     const textComponent0: Component = {
       id: 'node1',
       type: 'text',
@@ -926,14 +926,14 @@ describe('renderFlowMolio - Texts', () => {
       data1: { firstText: 'First', secondText: 'Second' },
     };
 
-    const result = renderFlowMolio(layout, dataSources);
+    const result = await renderFlowMolio(layout, dataSources);
     expect(result).toEqual(
       `<svg id="fmo-svg-1" width="100" height="100"><text id="fmo-text-1"><tspan x="0" y="0">First</tspan></text><text id="fmo-text-2"><tspan x="0" y="0">Second</tspan></text></svg>`,
     );
   });
 
   describe('Full-height element handling', () => {
-    it('should update heights of background elements when text expands', () => {
+    it('should update heights of background elements when text expands', async () => {
       const mockSvgWithBackground = `
         <svg width="375" height="826">
           <rect width="375" height="826" fill="white"/>
@@ -969,7 +969,7 @@ describe('renderFlowMolio - Texts', () => {
         data1: { longText: 'This is a much longer text that will definitely span multiple lines and cause height expansion' },
       };
 
-      const result = renderFlowMolio(layout, dataSources);
+      const result = await renderFlowMolio(layout, dataSources);
       
       // Background rect should have increased height
       const rectMatch = result.match(/<rect[^>]*height="([^"]*)"[^>]*>/);
@@ -984,7 +984,7 @@ describe('renderFlowMolio - Texts', () => {
       expect(svgHeight).toBeGreaterThan(826);
     });
 
-    it('should not update heights of non-background elements', () => {
+    it('should not update heights of non-background elements', async () => {
       const mockSvgWithSmallRect = `
         <svg width="375" height="200">
           <rect x="10" y="10" width="50" height="30" fill="blue"/>
@@ -1020,7 +1020,7 @@ describe('renderFlowMolio - Texts', () => {
         data1: { longText: 'This is a much longer text that will span multiple lines' },
       };
 
-      const result = renderFlowMolio(layout, dataSources);
+      const result = await renderFlowMolio(layout, dataSources);
       
       // Small rect should keep original height (not a background element)
       const rectMatch = result.match(/<rect[^>]*height="([^"]*)"[^>]*>/);

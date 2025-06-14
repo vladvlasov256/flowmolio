@@ -3,36 +3,36 @@ import { renderFlowMolio } from '../../src/utils/renderFlowMolio';
 
 describe('renderFlowMolio', () => {
   describe('Basic functionality', () => {
-    it('should return error message when no SVG template provided', () => {
+    it('should return error message when no SVG template provided', async () => {
       const layout: Layout = {
         svg: '',
         connections: [],
         components: [],
       };
 
-      const result = renderFlowMolio(layout, {});
+      const result = await renderFlowMolio(layout, {});
       expect(result).toBe('<div>No SVG template provided</div>');
     });
 
-    it('should handle empty preview object gracefully', () => {
+    it('should handle empty preview object gracefully', async () => {
       const layout: Layout = {
         svg: '<svg></svg>',
         connections: [],
         components: [],
       };
 
-      const result = renderFlowMolio(layout, {});
+      const result = await renderFlowMolio(layout, {});
       expect(result).toEqual('<svg id="fmo-svg-1" />');
     });
 
-    it('should return error message when SVG parsing fails', () => {
+    it('should return error message when SVG parsing fails', async () => {
       const layout: Layout = {
         svg: 'invalid-svg',
         connections: [],
         components: [],
       };
 
-      const result = renderFlowMolio(layout, {});
+      const result = await renderFlowMolio(layout, {});
       expect(result).toContain('Rendering error:');
     });
   });
@@ -48,7 +48,7 @@ describe('renderFlowMolio', () => {
       </svg>
     `;
 
-    it('should handle multiple data bindings simultaneously', () => {
+    it('should handle multiple data bindings simultaneously', async () => {
       const components: Component[] = [
         { id: 'titleNode', type: 'text', elementId: 'title' },
         { id: 'priceNode', type: 'text', elementId: 'price' },
@@ -89,13 +89,13 @@ describe('renderFlowMolio', () => {
         },
       };
 
-      const result = renderFlowMolio(layout, dataSources);
+      const result = await renderFlowMolio(layout, dataSources);
       expect(result).toEqual(
         `<svg id="fmo-svg-1" width="200" height="200"><rect id="bg" fill="#ffffff" stroke="#000000" /><text id="title">Awesome Product</text><text id="price">$29.99</text><image id="product-img" href="https://example.com/awesome.jpg" xlink:href="https://example.com/awesome.jpg" /><circle id="badge" fill="#00ff00" /></svg>`,
       );
     });
 
-    it('should handle partial data gracefully', () => {
+    it('should handle partial data gracefully', async () => {
       const components: Component[] = [
         { id: 'titleNode', type: 'text', elementId: 'title' },
         { id: 'priceNode', type: 'text', elementId: 'price' },
@@ -118,13 +118,13 @@ describe('renderFlowMolio', () => {
         },
       };
 
-      const result = renderFlowMolio(layout, dataSources);
+      const result = await renderFlowMolio(layout, dataSources);
       expect(result).toEqual(
         `<svg id="fmo-svg-1" width="200" height="200"><rect id="bg" fill="#ffffff" stroke="#000000" /><text id="title">Partial Product</text><text id="price">$0.00</text><image id="product-img" href="placeholder.jpg" /><circle id="badge" fill="#ff0000" /></svg>`,
       );
     });
 
-    it('should handle connections without matching components', () => {
+    it('should handle connections without matching components', async () => {
       const connections: Connection[] = [
         { sourceNodeId: 'product', sourceField: 'name', targetNodeId: 'nonexistentNode' },
       ];
@@ -139,11 +139,11 @@ describe('renderFlowMolio', () => {
         product: { name: 'Test Product' },
       };
 
-      const result = renderFlowMolio(layout, dataSources);
+      const result = await renderFlowMolio(layout, dataSources);
       expect(result).toContain('Product Title'); // Original text should remain
     });
 
-    it('should handle components without matching elements', () => {
+    it('should handle components without matching elements', async () => {
       const components: Component[] = [
         { id: 'titleNode', type: 'text', elementId: 'nonexistentElement' },
       ];
@@ -162,13 +162,13 @@ describe('renderFlowMolio', () => {
         product: { name: 'Test Product' },
       };
 
-      const result = renderFlowMolio(layout, dataSources);
+      const result = await renderFlowMolio(layout, dataSources);
       expect(result).toContain('Product Title'); // Original text should remain
     });
   });
 
   describe('XML escaping', () => {
-    it('should escape XML special characters in attribute values', () => {
+    it('should escape XML special characters in attribute values', async () => {
       const layout: Layout = {
         svg: '<svg><text id="test">Test</text></svg>',
         connections: [{ sourceNodeId: 'data', sourceField: 'title', targetNodeId: 'textNode' }],
@@ -181,11 +181,11 @@ describe('renderFlowMolio', () => {
         },
       };
 
-      const result = renderFlowMolio(layout, dataSources);
+      const result = await renderFlowMolio(layout, dataSources);
       expect(result).toContain('Material &#38; care');
     });
 
-    it('should escape multiple XML special characters', () => {
+    it('should escape multiple XML special characters', async () => {
       const layout: Layout = {
         svg: '<svg><text id="test">Test</text></svg>',
         connections: [{ sourceNodeId: 'data', sourceField: 'content', targetNodeId: 'textNode' }],
@@ -198,11 +198,11 @@ describe('renderFlowMolio', () => {
         },
       };
 
-      const result = renderFlowMolio(layout, dataSources);
+      const result = await renderFlowMolio(layout, dataSources);
       expect(result).toContain('Text with &#60;brackets&#62;, &#34;quotes&#34; &#38; ampersands');
     });
 
-    it('should escape special characters in ID attributes', () => {
+    it('should escape special characters in ID attributes', async () => {
       const svg = '<svg><text id="Material & care">Test</text></svg>';
       
       const layout: Layout = {
@@ -211,35 +211,35 @@ describe('renderFlowMolio', () => {
         components: [],
       };
 
-      const result = renderFlowMolio(layout, {});
+      const result = await renderFlowMolio(layout, {});
       expect(result).toContain('id="Material &#38; care"');
     });
   });
 
   describe('Edge cases', () => {
-    it('should handle empty data sources', () => {
+    it('should handle empty data sources', async () => {
       const layout: Layout = {
         svg: '<svg><text id="test">Test</text></svg>',
         connections: [],
         components: [],
       };
 
-      const result = renderFlowMolio(layout, {});
+      const result = await renderFlowMolio(layout, {});
       expect(result).toContain('Test');
     });
 
-    it('should handle null data sources', () => {
+    it('should handle null data sources', async () => {
       const layout: Layout = {
         svg: '<svg><text id="test">Test</text></svg>',
         connections: [],
         components: [],
       };
 
-      const result = renderFlowMolio(layout, {} as DataSources);
+      const result = await renderFlowMolio(layout, {} as DataSources);
       expect(result).toContain('Test');
     });
 
-    it('should handle undefined preview object properties', () => {
+    it('should handle undefined preview object properties', async () => {
       const layout: Layout = {
         svg: '<svg><text id="test">Test</text></svg>',
         connections: [],
@@ -250,7 +250,7 @@ describe('renderFlowMolio', () => {
       const partialLayout: Partial<Layout> = { ...layout };
       delete partialLayout.components;
 
-      const result = renderFlowMolio(partialLayout as Layout, {});
+      const result = await renderFlowMolio(partialLayout as Layout, {});
       expect(result).toContain('Test');
     });
   });

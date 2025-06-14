@@ -7,7 +7,7 @@ import { parseSVG } from './svgUtils';
  * Renders an SVG with data bindings applied
  * This is a pure rendering function without any hover/inspection functionality
  */
-export function renderFlowMolio(layout: Layout, dataSources: DataSources): string {
+export async function renderFlowMolio(layout: Layout, dataSources: DataSources): Promise<string> {
   if (!layout.svg) {
     return '<div>No SVG template provided</div>';
   }
@@ -17,7 +17,7 @@ export function renderFlowMolio(layout: Layout, dataSources: DataSources): strin
     const svgTree = parseSVG(layout.svg);
 
     // Apply data bindings (includes text, image, and color components)
-    applyDataBindings({
+    await applyDataBindings({
       svgTree,
       connections: layout.connections,
       dataSources,

@@ -1,4 +1,5 @@
 import { SVGElementNode } from '../types';
+import { StaticCanvas, loadSVGFromString } from 'fabric/node';
 
 import { extractLinesFromElement } from './textLayoutUtils';
 
@@ -13,6 +14,109 @@ export interface ElementBounds {
 }
 
 /**
+ * Cache for fabric.js parsed SVG objects to avoid re-parsing
+ */
+const fabricSvgCache = new Map<string, { objects: any[], options: any }>();
+
+/**
+ * Converts SVG tree to string for fabric.js processing
+ */
+function svgTreeToString(svgTree: SVGElementNode): string {
+  function nodeToString(node: SVGElementNode): string {
+    const attributes = Object.entries(node.attributes)
+      .map(([key, value]) => `${key}="${value}"`)
+      .join(' ');
+    
+    const children = node.children
+      .map(child => nodeToString(child))
+      .join('');
+    
+    const innerHTML = node.innerHTML || '';
+    
+    if (children || innerHTML) {
+      return `<${node.tagName} ${attributes}>${innerHTML}${children}</${node.tagName}>`;
+    } else {
+      return `<${node.tagName} ${attributes} />`;
+    }
+  }
+
+  // Ensure we always have a complete SVG document
+  if (svgTree.tagName.toLowerCase() === 'svg') {
+    return nodeToString(svgTree);
+  } else {
+    // If we're given a non-SVG element, we need to find the SVG root
+    // For now, wrap in a basic SVG
+    return `<svg xmlns="http://www.w3.org/2000/svg">${nodeToString(svgTree)}</svg>`;
+  }
+}
+
+/**
+ * Calculate element bounds using fabric.js for accurate SVG rendering
+ */
+async function calculateElementBoundsWithFabric(
+  svgTree: SVGElementNode,
+  targetElementId?: string,
+): Promise<ElementBounds> {
+  const svgString = svgTreeToString(svgTree);
+  const cacheKey = `${svgString}_${targetElementId || 'root'}`;
+  
+  let fabricData = fabricSvgCache.get(cacheKey);
+  
+  if (!fabricData) {
+    try {
+      const parsedSvg = await loadSVGFromString(svgString);
+      fabricData = {
+        objects: parsedSvg.objects.filter(obj => obj !== null),
+        options: parsedSvg.options
+      };
+      fabricSvgCache.set(cacheKey, fabricData);
+    } catch (error) {
+      console.warn('Failed to parse SVG with fabric.js:', error);
+      throw error;
+    }
+  }
+  
+  if (targetElementId) {
+    // Find the specific element by ID
+    for (const obj of fabricData.objects) {
+      if (obj.id === targetElementId || 
+          obj.elementId === targetElementId || 
+          obj.data?.id === targetElementId ||
+          obj.svgUid === targetElementId) {
+        const bounds = obj.getBoundingRect();
+        return {
+          x: bounds.left,
+          y: bounds.top,
+          width: bounds.width,
+          height: bounds.height
+        };
+      }
+    }
+    
+    // If element not found, return zero bounds
+    return { x: 0, y: 0, width: 0, height: 0 };
+  } else {
+    // Calculate overall bounds of all objects
+    if (fabricData.objects.length === 0) {
+      return { x: 0, y: 0, width: 0, height: 0 };
+    }
+    
+    const allBounds = fabricData.objects.map(obj => obj.getBoundingRect());
+    const minX = Math.min(...allBounds.map(b => b.left));
+    const minY = Math.min(...allBounds.map(b => b.top));
+    const maxX = Math.max(...allBounds.map(b => b.left + b.width));
+    const maxY = Math.max(...allBounds.map(b => b.top + b.height));
+    
+    return {
+      x: minX,
+      y: minY,
+      width: maxX - minX,
+      height: maxY - minY
+    };
+  }
+}
+
+/**
  * Context for height update operations
  */
 export interface HeightUpdateContext {
@@ -22,10 +126,39 @@ export interface HeightUpdateContext {
   deltaHeight: number;
 }
 
+
+
 /**
- * Calculates bounds for a text element using our line-based approach
+ * Calculate element bounds using fabric.js (async)
+ * This is the primary bounds calculation function
  */
-function calculateTextBounds(element: SVGElementNode): ElementBounds {
+export async function calculateElementBounds(
+  element: SVGElementNode, 
+  svgRoot?: SVGElementNode
+): Promise<ElementBounds> {
+  const root = svgRoot || element;
+  const elementId = element.attributes.id;
+  
+  return await calculateElementBoundsWithFabric(root, elementId);
+}
+
+/**
+ * Calculate bounds for an element within the context of the full SVG tree
+ * This version has access to the full SVG context for better positioning
+ */
+export async function calculateElementBoundsInContext(
+  element: SVGElementNode,
+  svgRoot: SVGElementNode,
+): Promise<ElementBounds> {
+  const elementId = element.attributes.id;
+  return await calculateElementBoundsWithFabric(svgRoot, elementId);
+}
+
+/**
+ * Synchronous fallback for text bounds using line extraction
+ * Used when we need immediate bounds for text layout calculations
+ */
+export function calculateTextBoundsSync(element: SVGElementNode): ElementBounds {
   const lines = extractLinesFromElement(element);
 
   if (lines.length === 0) {
@@ -37,7 +170,7 @@ function calculateTextBounds(element: SVGElementNode): ElementBounds {
   const minY = lines[0].y; // lines are sorted by y
   const maxY = lines[lines.length - 1].y;
 
-  // Estimate line height and text width
+  // Estimate line height
   let lineHeight = 12; // default fallback
   if (lines.length >= 2) {
     lineHeight = lines[1].y - lines[0].y;
@@ -49,21 +182,18 @@ function calculateTextBounds(element: SVGElementNode): ElementBounds {
     }
   }
 
-  // Estimate width by finding the longest line (rough approximation)
-  // For Figma exports, we can often find width constraints or measure text
+  // Estimate width by finding the longest line
   let maxWidth = 0;
   if (element.innerHTML) {
-    // Look for x coordinates to estimate line lengths
     const xMatches = element.innerHTML.match(/x="([^"]*)"/g);
     if (xMatches && xMatches.length > 1) {
       const xValues = xMatches.map(match => parseFloat(match.replace(/x="|"/g, '')));
-      maxWidth = Math.max(...xValues) - minX + 100; // rough estimation
+      maxWidth = Math.max(...xValues) - minX + 100;
     }
   }
 
-  // Fallback width estimation
   if (maxWidth === 0) {
-    maxWidth = 200; // reasonable default for Figma text blocks
+    maxWidth = 200; // reasonable default
   }
 
   const height = lines.length > 1 ? maxY - minY + lineHeight : lineHeight;
@@ -77,196 +207,52 @@ function calculateTextBounds(element: SVGElementNode): ElementBounds {
 }
 
 /**
- * Calculates bounds for a rectangle element
+ * Checks if an element contains (overlaps with) the changed element
+ * 
+ * An element "contains" the changed element if their bounds intersect
+ * for at least 90% of the changed element's height.
  */
-function calculateRectBounds(element: SVGElementNode): ElementBounds {
-  const x = parseFloat(element.attributes.x || '0');
-  const y = parseFloat(element.attributes.y || '0');
-  const width = parseFloat(element.attributes.width || '0');
-  const height = parseFloat(element.attributes.height || '0');
+export async function containsChangedElement(
+  element: SVGElementNode, 
+  changedElementBounds: ElementBounds,
+  svgRoot?: SVGElementNode
+): Promise<boolean> {
+  const elementBounds = await calculateElementBounds(element, svgRoot);
 
-  return { x, y, width, height };
-}
-
-/**
- * Calculates bounds for a circle element
- */
-function calculateCircleBounds(element: SVGElementNode): ElementBounds {
-  const cx = parseFloat(element.attributes.cx || '0');
-  const cy = parseFloat(element.attributes.cy || '0');
-  const r = parseFloat(element.attributes.r || '0');
-
-  return {
-    x: cx - r,
-    y: cy - r,
-    width: r * 2,
-    height: r * 2,
-  };
-}
-
-/**
- * Calculates bounds for an ellipse element
- */
-function calculateEllipseBounds(element: SVGElementNode): ElementBounds {
-  const cx = parseFloat(element.attributes.cx || '0');
-  const cy = parseFloat(element.attributes.cy || '0');
-  const rx = parseFloat(element.attributes.rx || '0');
-  const ry = parseFloat(element.attributes.ry || '0');
-
-  return {
-    x: cx - rx,
-    y: cy - ry,
-    width: rx * 2,
-    height: ry * 2,
-  };
-}
-
-/**
- * Calculates bounds for a line element
- */
-function calculateLineBounds(element: SVGElementNode): ElementBounds {
-  const x1 = parseFloat(element.attributes.x1 || '0');
-  const y1 = parseFloat(element.attributes.y1 || '0');
-  const x2 = parseFloat(element.attributes.x2 || '0');
-  const y2 = parseFloat(element.attributes.y2 || '0');
-
-  const minX = Math.min(x1, x2);
-  const minY = Math.min(y1, y2);
-  const width = Math.abs(x2 - x1);
-  const height = Math.abs(y2 - y1);
-
-  return { x: minX, y: minY, width, height };
-}
-
-/**
- * Calculates bounds for a group element by computing bounding box of all children
- */
-function calculateGroupBounds(element: SVGElementNode): ElementBounds {
-  if (element.children.length === 0) {
-    return { x: 0, y: 0, width: 0, height: 0 };
+  // Calculate vertical overlap between the two elements
+  const overlapTop = Math.max(elementBounds.y, changedElementBounds.y);
+  const overlapBottom = Math.min(
+    elementBounds.y + elementBounds.height,
+    changedElementBounds.y + changedElementBounds.height
+  );
+  
+  // If there's no overlap, return false
+  if (overlapTop >= overlapBottom) return false;
+  
+  const overlapHeight = overlapBottom - overlapTop;
+  const changedElementHeight = changedElementBounds.height;
+  
+  // Element contains the changed element if there's meaningful overlap
+  // For very small elements, any overlap counts
+  // For larger elements, require at least 90% overlap
+  if (changedElementHeight < 5) {
+    return overlapHeight > 0; // Any overlap is good enough for very small elements
   }
-
-  const childBounds = element.children.map(child => calculateElementBounds(child));
-
-  // Find the overall bounding box
-  const minX = Math.min(...childBounds.map(b => b.x));
-  const minY = Math.min(...childBounds.map(b => b.y));
-  const maxX = Math.max(...childBounds.map(b => b.x + b.width));
-  const maxY = Math.max(...childBounds.map(b => b.y + b.height));
-
-  return {
-    x: minX,
-    y: minY,
-    width: maxX - minX,
-    height: maxY - minY,
-  };
+  
+  const overlapRatio = overlapHeight / changedElementHeight;
+  return overlapRatio >= 0.9;
 }
 
 /**
- * Calculates bounds for a path element (basic approximation)
- * For Figma exports, paths are often simple shapes
+ * Fallback function: checks if an element is full-height relative to its parent
+ * This is used when containment logic doesn't find any elements
  */
-function calculatePathBounds(element: SVGElementNode): ElementBounds {
-  const pathData = element.attributes.d;
-  if (!pathData) {
-    return { x: 0, y: 0, width: 0, height: 0 };
-  }
-
-  // Extract coordinates from path data (rough approximation)
-  const coordMatches = pathData.match(/[-+]?[0-9]*\.?[0-9]+/g);
-  if (!coordMatches || coordMatches.length < 2) {
-    return { x: 0, y: 0, width: 0, height: 0 };
-  }
-
-  const coords = coordMatches.map(coord => parseFloat(coord));
-
-  // Separate x and y coordinates (assuming they alternate)
-  const xCoords = coords.filter((_, index) => index % 2 === 0);
-  const yCoords = coords.filter((_, index) => index % 2 === 1);
-
-  if (xCoords.length === 0 || yCoords.length === 0) {
-    return { x: 0, y: 0, width: 0, height: 0 };
-  }
-
-  const minX = Math.min(...xCoords);
-  const minY = Math.min(...yCoords);
-  const maxX = Math.max(...xCoords);
-  const maxY = Math.max(...yCoords);
-
-  return {
-    x: minX,
-    y: minY,
-    width: maxX - minX,
-    height: maxY - minY,
-  };
-}
-
-/**
- * Main function to calculate bounds for any SVG element
- */
-export function calculateElementBounds(element: SVGElementNode): ElementBounds {
-  switch (element.tagName.toLowerCase()) {
-    case 'text':
-      return calculateTextBounds(element);
-
-    case 'rect':
-      return calculateRectBounds(element);
-
-    case 'circle':
-      return calculateCircleBounds(element);
-
-    case 'ellipse':
-      return calculateEllipseBounds(element);
-
-    case 'line':
-      return calculateLineBounds(element);
-
-    case 'g':
-      return calculateGroupBounds(element);
-
-    case 'path':
-      return calculatePathBounds(element);
-
-    case 'svg': {
-      // For SVG root, use viewBox or width/height
-      const viewBox = element.attributes.viewBox;
-      if (viewBox) {
-        const parts = viewBox.split(/\s+/);
-        if (parts.length === 4) {
-          return {
-            x: parseFloat(parts[0]),
-            y: parseFloat(parts[1]),
-            width: parseFloat(parts[2]),
-            height: parseFloat(parts[3]),
-          };
-        }
-      }
-      // Fallback to width/height attributes
-      return {
-        x: 0,
-        y: 0,
-        width: parseFloat(element.attributes.width || '0'),
-        height: parseFloat(element.attributes.height || '0'),
-      };
-    }
-
-    default:
-      // For unknown elements, return zero bounds
-      // Note: In production, you might want to use a proper logging system
-      return { x: 0, y: 0, width: 0, height: 0 };
-  }
-}
-
-/**
- * Checks if an element is a full-height element relative to its parent
- */
-export function isFullHeightSibling(element: SVGElementNode, parentBounds: ElementBounds): boolean {
-  const elementBounds = calculateElementBounds(element);
-
-  // Element must have height attribute or be a rect/path
-  if (!['rect', 'path', 'ellipse', 'circle'].includes(element.tagName.toLowerCase())) {
-    return false;
-  }
+async function isFullHeightElement(
+  element: SVGElementNode, 
+  parentBounds: ElementBounds,
+  svgRoot?: SVGElementNode
+): Promise<boolean> {
+  const elementBounds = await calculateElementBounds(element, svgRoot);
 
   // Height should be close to parent height (within 10% tolerance)
   const heightRatio = elementBounds.height / parentBounds.height;
@@ -280,19 +266,33 @@ export function isFullHeightSibling(element: SVGElementNode, parentBounds: Eleme
 }
 
 /**
- * Updates heights of full-height siblings within a container
+ * Updates heights of siblings that contain the changed element
+ * Falls back to full-height logic if no containing elements are found
  */
-export function updateFullHeightSiblings(
+export async function updateContainingSiblings(
   containerElement: SVGElementNode,
+  changedElementBounds: ElementBounds,
   deltaHeight: number,
   svgRoot?: SVGElementNode,
-): void {
-  const containerBounds = calculateElementBounds(containerElement);
-
-  containerElement.children.forEach(child => {
-    if (isFullHeightSibling(child, containerBounds)) {
-      // Update the element's height based on its type
-      switch (child.tagName.toLowerCase()) {
+): Promise<void> {
+  // First pass: try to find elements that contain the changed element
+  let foundContainingElements = false;
+  const elementsToUpdate: SVGElementNode[] = [];
+  
+  for (const child of containerElement.children) {
+    if (await containsChangedElement(child, changedElementBounds, svgRoot)) {
+      elementsToUpdate.push(child);
+      foundContainingElements = true;
+    }
+  }
+  
+  // With fabric.js providing accurate bounds, we don't need fallback logic
+  // If no containing elements found, that means no elements should be updated
+  
+  // Update all identified elements
+  for (const child of elementsToUpdate) {
+    // Update the element's height based on its type
+    switch (child.tagName.toLowerCase()) {
         case 'rect': {
           if (child.attributes.height) {
             const currentHeight = parseFloat(child.attributes.height);
@@ -320,28 +320,33 @@ export function updateFullHeightSiblings(
           break;
         }
 
+        case 'g': {
+          // For groups, recursively update their containing children
+          await updateContainingSiblings(child, changedElementBounds, deltaHeight, svgRoot);
+          break;
+        }
+
         // For paths and other complex shapes, we'd need more sophisticated logic
         // but for Figma exports, rects are most common for backgrounds
       }
-    }
-  });
+  }
 
   // Also update clipPath defs that are referenced by elements in this container
   // This ensures clipPaths expand when their corresponding containers expand
   if (svgRoot) {
-    updateReferencedClipPaths(svgRoot, containerElement, containerBounds, deltaHeight);
+    await updateReferencedClipPaths(svgRoot, containerElement, changedElementBounds, deltaHeight);
   }
 }
 
 /**
  * Updates specific clipPath rectangles that are referenced by elements in the container
  */
-function updateReferencedClipPaths(
+async function updateReferencedClipPaths(
   svgTree: SVGElementNode,
   containerElement: SVGElementNode,
-  containerBounds: ElementBounds,
+  changedElementBounds: ElementBounds,
   deltaHeight: number,
-): void {
+): Promise<void> {
   // Find all clip-path references in the container
   const clipPathIds = new Set<string>();
 
@@ -379,24 +384,24 @@ function updateReferencedClipPaths(
   if (!defsElement) return;
 
   // Update only the referenced clipPaths
-  defsElement.children.forEach(child => {
+  for (const child of defsElement.children) {
     if (child.tagName.toLowerCase() === 'clippath') {
       const clipPathId = child.attributes.id;
       if (clipPathId && clipPathIds.has(clipPathId)) {
         // Check for rect children in this specific clipPath
-        child.children.forEach(clipChild => {
+        for (const clipChild of child.children) {
           if (clipChild.tagName.toLowerCase() === 'rect') {
-            // Use the same logic as isFullHeightSibling but for clipPath rects
-            if (isFullHeightSibling(clipChild, containerBounds)) {
+            // Use the same logic as containsChangedElement but for clipPath rects
+            if (await containsChangedElement(clipChild, changedElementBounds, svgTree)) {
               const currentHeight = parseFloat(clipChild.attributes.height || '0');
               const newHeight = Math.max(0, currentHeight + deltaHeight);
               clipChild.attributes.height = String(newHeight);
             }
           }
-        });
+        }
       }
     }
-  });
+  }
 }
 
 /**
@@ -426,13 +431,14 @@ function findParentElement(
 /**
  * Calculates how much a parent's height should change based on a child's height change
  */
-function calculateParentHeightChange(
+async function calculateParentHeightChange(
   parentElement: SVGElementNode,
   childElement: SVGElementNode,
   childDeltaHeight: number,
-): number {
-  const parentBounds = calculateElementBounds(parentElement);
-  const childBounds = calculateElementBounds(childElement);
+  svgRoot?: SVGElementNode,
+): Promise<number> {
+  const parentBounds = await calculateElementBounds(parentElement, svgRoot);
+  const childBounds = await calculateElementBounds(childElement, svgRoot);
 
   // If child is at the bottom of parent, parent height should increase
   const childBottomY = childBounds.y + childBounds.height;
@@ -451,11 +457,12 @@ function calculateParentHeightChange(
 /**
  * Recursively updates element heights from a changed element up to the SVG root
  */
-export function updateElementAndAncestors(
+export async function updateElementAndAncestors(
   svgTree: SVGElementNode,
   changedElement: SVGElementNode,
+  changedElementOriginalBounds: ElementBounds,
   deltaHeight: number,
-): void {
+): Promise<void> {
   if (deltaHeight === 0) return;
 
   // Find the parent of the changed element
@@ -465,8 +472,8 @@ export function updateElementAndAncestors(
     return;
   }
 
-  // Update full-height siblings in the parent container
-  updateFullHeightSiblings(parentElement, deltaHeight, svgTree);
+  // Update siblings that contain the changed element (using original bounds)
+  await updateContainingSiblings(parentElement, changedElementOriginalBounds, deltaHeight, svgTree);
 
   // If parent is the SVG root, also update SVG dimensions
   if (parentElement.tagName === 'svg') {
@@ -491,25 +498,35 @@ export function updateElementAndAncestors(
   }
 
   // Calculate how much the parent's height should change
-  const parentDeltaHeight = calculateParentHeightChange(parentElement, changedElement, deltaHeight);
+  const parentDeltaHeight = await calculateParentHeightChange(parentElement, changedElement, deltaHeight, svgTree);
 
   // If parent height doesn't need to change, we might still need to propagate
   // the original deltaHeight up to update siblings at higher levels
   const propagationDelta = parentDeltaHeight > 0 ? parentDeltaHeight : deltaHeight;
 
   // Recursively update ancestors
-  updateElementAndAncestors(svgTree, parentElement, propagationDelta);
+  await updateElementAndAncestors(svgTree, parentElement, changedElementOriginalBounds, propagationDelta);
 }
 
 /**
  * Main function to handle height updates from text expansion
- * This replaces the global updateFullHeightElements approach
+ * This replaces the global updateBackgroundElements approach
  */
-export function handleTextHeightChange(
+export async function handleTextHeightChange(
   svgTree: SVGElementNode,
   textElement: SVGElementNode,
   deltaHeight: number,
-): void {
+): Promise<void> {
+  // Capture the original bounds of the text element before any modifications
+  // Use sync version for text bounds since we need immediate calculation for layout
+  const originalBounds = calculateTextBoundsSync(textElement);
+  
+  // For very small text elements, use expanded bounds for containment detection
+  // This ensures backgrounds get updated even for single-line text that expands
+  const boundsForContainment = originalBounds.height < 5 
+    ? { ...originalBounds, height: Math.max(originalBounds.height, deltaHeight) }
+    : originalBounds;
+  
   // Start the recursive update from the text element
-  updateElementAndAncestors(svgTree, textElement, deltaHeight);
+  await updateElementAndAncestors(svgTree, textElement, boundsForContainment, deltaHeight);
 }

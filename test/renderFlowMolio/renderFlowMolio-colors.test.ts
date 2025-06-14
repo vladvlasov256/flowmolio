@@ -16,7 +16,7 @@ describe('renderFlowMolio', () => {
     `;
     // `<svg width="100" height="100"><rect id="rect1" fill="#ff0000" stroke="#0000ff" /><circle id="circle1" fill="#ff0000" /><defs ><lineargradient ><stop stop-color="#ff0000" offset="0%" /></lineargradient></defs></svg>`
 
-    it('should apply color changes based on fill role', () => {
+    it('should apply color changes based on fill role', async () => {
       const colorComponent: Component = {
         id: 'color1',
         type: 'color',
@@ -44,13 +44,13 @@ describe('renderFlowMolio', () => {
         data1: { primaryColor: '#00ff00' },
       };
 
-      const result = renderFlowMolio(layout, dataSources);
+      const result = await renderFlowMolio(layout, dataSources);
       expect(result).toEqual(
         `<svg id="fmo-svg-1" width="100" height="100"><rect id="rect1" fill="#00ff00" stroke="#0000ff" /><circle id="circle1" fill="#00ff00" /><defs id="fmo-defs-1"><lineargradient id="fmo-lineargradient-1"><stop id="fmo-stop-1" stop-color="#ff0000" offset="0%" /></lineargradient></defs></svg>`,
       );
     });
 
-    it('should apply color changes based on stroke role', () => {
+    it('should apply color changes based on stroke role', async () => {
       const colorComponent: Component = {
         id: 'color1',
         type: 'color',
@@ -78,13 +78,13 @@ describe('renderFlowMolio', () => {
         data1: { borderColor: '#ff00ff' },
       };
 
-      const result = renderFlowMolio(layout, dataSources);
+      const result = await renderFlowMolio(layout, dataSources);
       expect(result).toEqual(
         `<svg id="fmo-svg-1" width="100" height="100"><rect id="rect1" fill="#ff0000" stroke="#ff00ff" /><circle id="circle1" fill="#ff0000" /><defs id="fmo-defs-1"><lineargradient id="fmo-lineargradient-1"><stop id="fmo-stop-1" stop-color="#ff0000" offset="0%" /></lineargradient></defs></svg>`,
       );
     });
 
-    it('should apply color changes based on stop-color role', () => {
+    it('should apply color changes based on stop-color role', async () => {
       const colorComponent: Component = {
         id: 'color1',
         type: 'color',
@@ -112,13 +112,13 @@ describe('renderFlowMolio', () => {
         data1: { gradientColor: '#ffff00' },
       };
 
-      const result = renderFlowMolio(layout, dataSources);
+      const result = await renderFlowMolio(layout, dataSources);
       expect(result).toEqual(
         `<svg id="fmo-svg-1" width="100" height="100"><rect id="rect1" fill="#ff0000" stroke="#0000ff" /><circle id="circle1" fill="#ff0000" /><defs id="fmo-defs-1"><lineargradient id="fmo-lineargradient-1"><stop id="fmo-stop-1" stop-color="#ffff00" offset="0%" /></lineargradient></defs></svg>`,
       );
     });
 
-    it('should handle multiple enabled color roles', () => {
+    it('should handle multiple enabled color roles', async () => {
       const colorComponent: Component = {
         id: 'color1',
         type: 'color',
@@ -146,13 +146,13 @@ describe('renderFlowMolio', () => {
         data1: { themeColor: '#00ffff' },
       };
 
-      const result = renderFlowMolio(layout, dataSources);
+      const result = await renderFlowMolio(layout, dataSources);
       expect(result).toEqual(
         `<svg id="fmo-svg-1" width="100" height="100"><rect id="rect1" fill="#00ffff" stroke="#0000ff" /><circle id="circle1" fill="#00ffff" /><defs id="fmo-defs-1"><lineargradient id="fmo-lineargradient-1"><stop id="fmo-stop-1" stop-color="#00ffff" offset="0%" /></lineargradient></defs></svg>`,
       );
     });
 
-    it('should only replace colors that match the target color exactly', () => {
+    it('should only replace colors that match the target color exactly', async () => {
       const colorComponent: Component = {
         id: 'color1',
         type: 'color',
@@ -180,13 +180,13 @@ describe('renderFlowMolio', () => {
         data1: { newColor: '#purple' },
       };
 
-      const result = renderFlowMolio(layout, dataSources);
+      const result = await renderFlowMolio(layout, dataSources);
       expect(result).toEqual(
         `<svg id="fmo-svg-1" width="100" height="100"><rect id="rect1" fill="#purple" stroke="#0000ff" /><circle id="circle1" fill="#purple" /><defs id="fmo-defs-1"><lineargradient id="fmo-lineargradient-1"><stop id="fmo-stop-1" stop-color="#ff0000" offset="0%" /></lineargradient></defs></svg>`,
       );
     });
 
-    it('should handle invalid color values gracefully', () => {
+    it('should handle invalid color values gracefully', async () => {
       const colorComponent: Component = {
         id: 'color1',
         type: 'color',
@@ -214,13 +214,13 @@ describe('renderFlowMolio', () => {
         data1: { invalidColor: null },
       };
 
-      const result = renderFlowMolio(layout, dataSources);
+      const result = await renderFlowMolio(layout, dataSources);
       expect(result).toEqual(
         `<svg id="fmo-svg-1" width="100" height="100"><rect id="rect1" fill="#ff0000" stroke="#0000ff" /><circle id="circle1" fill="#ff0000" /><defs id="fmo-defs-1"><lineargradient id="fmo-lineargradient-1"><stop id="fmo-stop-1" stop-color="#ff0000" offset="0%" /></lineargradient></defs></svg>`,
       );
     });
 
-    it('should apply colors only to specified element IDs when elementIds is provided', () => {
+    it('should apply colors only to specified element IDs when elementIds is provided', async () => {
       const colorComponent: Component = {
         id: 'color1',
         type: 'color',
@@ -249,13 +249,13 @@ describe('renderFlowMolio', () => {
         data1: { newColor: '#00ff00' },
       };
 
-      const result = renderFlowMolio(layout, dataSources);
+      const result = await renderFlowMolio(layout, dataSources);
       expect(result).toEqual(
         `<svg id="fmo-svg-1" width="100" height="100"><rect id="rect1" fill="#00ff00" stroke="#0000ff" /><circle id="circle1" fill="#ff0000" /><defs id="fmo-defs-1"><lineargradient id="fmo-lineargradient-1"><stop id="fmo-stop-1" stop-color="#ff0000" offset="0%" /></lineargradient></defs></svg>`,
       );
     });
 
-    it('should apply colors to all elements when elementIds is empty array', () => {
+    it('should apply colors to all elements when elementIds is empty array', async () => {
       const colorComponent: Component = {
         id: 'color1',
         type: 'color',
@@ -284,13 +284,13 @@ describe('renderFlowMolio', () => {
         data1: { newColor: '#00ff00' },
       };
 
-      const result = renderFlowMolio(layout, dataSources);
+      const result = await renderFlowMolio(layout, dataSources);
       expect(result).toEqual(
         `<svg id="fmo-svg-1" width="100" height="100"><rect id="rect1" fill="#00ff00" stroke="#0000ff" /><circle id="circle1" fill="#00ff00" /><defs id="fmo-defs-1"><lineargradient id="fmo-lineargradient-1"><stop id="fmo-stop-1" stop-color="#ff0000" offset="0%" /></lineargradient></defs></svg>`,
       );
     });
 
-    it('should apply colors to all elements when elementIds is not provided', () => {
+    it('should apply colors to all elements when elementIds is not provided', async () => {
       const colorComponent: Component = {
         id: 'color1',
         type: 'color',
@@ -319,13 +319,13 @@ describe('renderFlowMolio', () => {
         data1: { newColor: '#00ff00' },
       };
 
-      const result = renderFlowMolio(layout, dataSources);
+      const result = await renderFlowMolio(layout, dataSources);
       expect(result).toEqual(
         `<svg id="fmo-svg-1" width="100" height="100"><rect id="rect1" fill="#00ff00" stroke="#0000ff" /><circle id="circle1" fill="#00ff00" /><defs id="fmo-defs-1"><lineargradient id="fmo-lineargradient-1"><stop id="fmo-stop-1" stop-color="#ff0000" offset="0%" /></lineargradient></defs></svg>`,
       );
     });
 
-    it('should apply colors to multiple specified element IDs', () => {
+    it('should apply colors to multiple specified element IDs', async () => {
       const mockSvgMultiple = `
         <svg width="100" height="100">
           <rect id="rect1" fill="#ff0000" stroke="#0000ff"/>
@@ -362,13 +362,13 @@ describe('renderFlowMolio', () => {
         data1: { newColor: '#00ff00' },
       };
 
-      const result = renderFlowMolio(layout, dataSources);
+      const result = await renderFlowMolio(layout, dataSources);
       expect(result).toEqual(
         `<svg id="fmo-svg-1" width="100" height="100"><rect id="rect1" fill="#00ff00" stroke="#0000ff" /><rect id="rect2" fill="#ff0000" stroke="#0000ff" /><circle id="circle1" fill="#00ff00" /></svg>`,
       );
     });
 
-    it('should work with element IDs and multiple color roles', () => {
+    it('should work with element IDs and multiple color roles', async () => {
       const colorComponent: Component = {
         id: 'color1',
         type: 'color',
@@ -397,7 +397,7 @@ describe('renderFlowMolio', () => {
         data1: { strokeColor: '#ff00ff' },
       };
 
-      const result = renderFlowMolio(layout, dataSources);
+      const result = await renderFlowMolio(layout, dataSources);
       expect(result).toEqual(
         `<svg id="fmo-svg-1" width="100" height="100"><rect id="rect1" fill="#ff0000" stroke="#ff00ff" /><circle id="circle1" fill="#ff0000" /><defs id="fmo-defs-1"><lineargradient id="fmo-lineargradient-1"><stop id="fmo-stop-1" stop-color="#ff0000" offset="0%" /></lineargradient></defs></svg>`,
       );

@@ -1,5 +1,5 @@
 import parse from 'node-html-parser';
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 
 import { Layout, Blueprint, DataSources } from '../types';
 import { convertBlueprintToLayout } from '../utils/blueprintToLayout';
@@ -39,11 +39,27 @@ export const FlowMolioPreview: React.FC<FlowMolioPreviewProps> = ({
     return layout!;
   }, [blueprint, layout]);
 
-  const renderedSvg = useMemo(() => {
+  const [renderedSvg, setRenderedSvg] = useState<string>('');
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  // Effect to handle async rendering
+  useEffect(() => {
     if (actualLayout && dataSources) {
-      return renderFlowMolio(actualLayout, dataSources);
+      setIsLoading(true);
+      renderFlowMolio(actualLayout, dataSources)
+        .then(result => {
+          setRenderedSvg(result);
+          setIsLoading(false);
+        })
+        .catch(error => {
+          console.error('FlowMolio rendering error:', error);
+          setRenderedSvg(`<div>Rendering error: ${error.message}</div>`);
+          setIsLoading(false);
+        });
+    } else {
+      setRenderedSvg('');
+      setIsLoading(false);
     }
-    return '';
   }, [actualLayout, dataSources]);
 
   const svg = useMemo(() => {
@@ -66,6 +82,11 @@ export const FlowMolioPreview: React.FC<FlowMolioPreviewProps> = ({
       innerHTML: svgElement.innerHTML,
     };
   }, [renderedSvg]);
+
+  if (isLoading) {
+    // Optional: return loading state
+    return <div>Loading...</div>;
+  }
 
   if (!svg) {
     return null;
