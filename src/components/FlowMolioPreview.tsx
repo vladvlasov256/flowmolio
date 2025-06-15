@@ -43,6 +43,16 @@ export const FlowMolioPreview: React.FC<FlowMolioPreviewProps> = ({
   const [renderedSvg, setRenderedSvg] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
+  const renderErrorSvg = (
+    error: Error,
+  ): string => `<svg width="400" height="100" xmlns="http://www.w3.org/2000/svg">
+            <rect width="100%" height="100%" fill="#ffebee" stroke="#f44336" stroke-width="1"/>
+            <text x="10" y="30" font-family="Arial, sans-serif" font-size="14" fill="#d32f2f">
+              <tspan x="10" dy="0">Rendering error:</tspan>
+              <tspan x="10" dy="20">${error.message}</tspan>
+            </text>
+          </svg>`;
+
   // Effect to handle async rendering
   useEffect(() => {
     if (actualLayout && dataSources) {
@@ -54,13 +64,7 @@ export const FlowMolioPreview: React.FC<FlowMolioPreviewProps> = ({
         })
         .catch(error => {
           // Convert error to SVG with text
-          const errorSvg = `<svg width="400" height="100" xmlns="http://www.w3.org/2000/svg">
-            <rect width="100%" height="100%" fill="#ffebee" stroke="#f44336" stroke-width="1"/>
-            <text x="10" y="30" font-family="Arial, sans-serif" font-size="14" fill="#d32f2f">
-              <tspan x="10" dy="0">Rendering error:</tspan>
-              <tspan x="10" dy="20">${error.message}</tspan>
-            </text>
-          </svg>`;
+          const errorSvg = renderErrorSvg(error);
           setRenderedSvg(errorSvg);
           setIsLoading(false);
         });

@@ -19,7 +19,6 @@ import {
 } from './textLayoutUtils';
 import { breakTextIntoLines, generateTspans, FontConfig } from './textUtils';
 
-
 /**
  * Extracts a value from a nested object using a dot-notation path
  */
@@ -337,4 +336,3 @@ export async function applyDataBindings(context: DataBindingContext): Promise<vo
   // Apply color data bindings
   applyColorDataBindings(context);
 }
-
