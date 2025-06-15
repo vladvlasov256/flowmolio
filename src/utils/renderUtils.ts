@@ -18,6 +18,7 @@ import {
   extractLinesFromElement,
 } from './textLayoutUtils'
 import { breakTextIntoLines, generateTspans, FontConfig } from './textUtils'
+import { getValueFromPath } from './dataUtils'
 
 /**
  * Converts horizontal alignment to SVG text-anchor attribute value
@@ -32,26 +33,6 @@ function getTextAnchor(horizontalAlignment: 'left' | 'center' | 'right'): string
     default:
       return 'start'
   }
-}
-
-/**
- * Extracts a value from a nested object using a dot-notation path
- */
-function getValueFromPath(obj: JSONValue, path: string): JSONValue | undefined {
-  if (!path) return undefined
-
-  const parts = path.split('.')
-  let current: JSONValue | undefined = obj
-
-  for (const part of parts) {
-    if (current === null || current === undefined) {
-      return undefined
-    }
-
-    current = (current as Record<string, JSONValue>)[part]
-  }
-
-  return current
 }
 
 /**

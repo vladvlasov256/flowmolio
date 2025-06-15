@@ -86,6 +86,86 @@ describe('renderFlowMolio - Texts', () => {
       );
     });
 
+    it('should handle array element access with dot notation', async () => {
+      const textComponent: Component = {
+        id: 'node1',
+        type: 'text',
+        elementId: 'text1',
+        renderingStrategy: {
+          width: {
+            type: 'natural'
+          },
+          horizontalAlignment: 'left',
+          offset: 0
+        }
+      };
+
+      const connection: Connection = {
+        sourceNodeId: 'data1',
+        sourceField: 'items.0',
+        targetNodeId: 'node1',
+      };
+
+      const layout: Layout = {
+        svg: mockSvg,
+        connections: [connection],
+        components: [textComponent],
+      };
+
+      const dataSources: DataSources = {
+        data1: {
+          items: ['First Item', 'Second Item', 'Third Item'],
+        },
+      };
+
+      const result = await renderFlowMolio(layout, dataSources);
+      expect(result).toEqual(
+        `<svg id="fmo-svg-1" width="100" height="100"><text id="text1"><tspan x="0" y="0" text-anchor="start">First Item</tspan></text><text id="text2"><tspan x="0" y="0">Another Text</tspan></text></svg>`,
+      );
+    });
+
+    it('should handle nested array and object access', async () => {
+      const textComponent: Component = {
+        id: 'node1',
+        type: 'text',
+        elementId: 'text1',
+        renderingStrategy: {
+          width: {
+            type: 'natural'
+          },
+          horizontalAlignment: 'left',
+          offset: 0
+        }
+      };
+
+      const connection: Connection = {
+        sourceNodeId: 'data1',
+        sourceField: 'users.1.name',
+        targetNodeId: 'node1',
+      };
+
+      const layout: Layout = {
+        svg: mockSvg,
+        connections: [connection],
+        components: [textComponent],
+      };
+
+      const dataSources: DataSources = {
+        data1: {
+          users: [
+            { name: 'John Doe', age: 30 },
+            { name: 'Jane Smith', age: 25 },
+            { name: 'Bob Johnson', age: 35 }
+          ],
+        },
+      };
+
+      const result = await renderFlowMolio(layout, dataSources);
+      expect(result).toEqual(
+        `<svg id="fmo-svg-1" width="100" height="100"><text id="text1"><tspan x="0" y="0" text-anchor="start">Jane Smith</tspan></text><text id="text2"><tspan x="0" y="0">Another Text</tspan></text></svg>`,
+      );
+    });
+
     it('should handle missing data sources gracefully', async () => {
       const textComponent: Component = {
         id: 'node1',
