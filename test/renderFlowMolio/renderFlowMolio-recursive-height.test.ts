@@ -385,7 +385,7 @@ describe('Recursive Height Update System', () => {
             </g>
           </g>
           
-          <!-- Full background (should NOT be updated - text is not here) -->
+          <!-- Full background (should be updated - contains the text at y=300) -->
           <rect id="full-background" x="0" y="0" width="400" height="600" fill="#f0f0f0"/>
           
           <!-- Another small background outside the half area (should NOT be updated) -->
