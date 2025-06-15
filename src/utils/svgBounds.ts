@@ -25,6 +25,12 @@ async function calculateElementBoundsWithFabric(
   targetElement: SVGElementNode,
 ): Promise<ElementBounds> {
   const elementId = targetElement?.attributes.id;
+  
+  // Require ID for fabric.js bounds calculation
+  if (!elementId) {
+    throw new Error(`Element must have an ID for fabric.js bounds calculation: ${targetElement.tagName}`);
+  }
+
   const fabricObjectsById: Record<string, FabricObject> = {};
   
   await loadSVGFromString(svgString, (element, obj) => {
@@ -33,11 +39,6 @@ async function calculateElementBoundsWithFabric(
       fabricObjectsById[fabricElementId] = obj
     }
   });
-  
-  // Require ID for fabric.js bounds calculation
-  if (!elementId) {
-    throw new Error(`Element must have an ID for fabric.js bounds calculation: ${targetElement.tagName}`);
-  }
 
   const fabricObject = fabricObjectsById[elementId];
   if (fabricObject) {
@@ -426,31 +427,6 @@ function findParentElement(
   return searchInElement(svgTree);
 }
 
-/**
- * Calculates how much a parent's height should change based on a child's height change
- */
-async function calculateParentHeightChange(
-  parentElement: SVGElementNode,
-  childElement: SVGElementNode,
-  childDeltaHeight: number,
-  svgRoot: SVGElementNode,
-): Promise<number> {
-  const parentBounds = await calculateElementBounds(parentElement, svgRoot);
-  const childBounds = await calculateElementBounds(childElement, svgRoot);
-
-  // If child is at the bottom of parent, parent height should increase
-  const childBottomY = childBounds.y + childBounds.height;
-  const parentBottomY = parentBounds.y + parentBounds.height;
-
-  // Only increase parent height if child expansion goes beyond parent's current bottom
-  const childNewBottomY = childBottomY + childDeltaHeight;
-
-  if (childNewBottomY > parentBottomY) {
-    return childNewBottomY - parentBottomY;
-  }
-
-  return 0;
-}
 
 /**
  * Recursively updates element heights from a changed element up to the SVG root
@@ -495,15 +471,9 @@ export async function updateElementAndAncestors(
     return;
   }
 
-  // Calculate how much the parent's height should change
-  const parentDeltaHeight = await calculateParentHeightChange(parentElement, changedElement, deltaHeight, svgTree);
-
-  // If parent height doesn't need to change, we might still need to propagate
-  // the original deltaHeight up to update siblings at higher levels
-  const propagationDelta = parentDeltaHeight > 0 ? parentDeltaHeight : deltaHeight;
-
-  // Recursively update ancestors
-  await updateElementAndAncestors(svgTree, parentElement, changedElementOriginalBounds, propagationDelta);
+  // Recursively update ancestors with the same deltaHeight
+  // For containers and background elements, the full deltaHeight should propagate
+  await updateElementAndAncestors(svgTree, parentElement, changedElementOriginalBounds, deltaHeight);
 }
 
 /**

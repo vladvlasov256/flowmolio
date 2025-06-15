@@ -509,8 +509,8 @@ describe('renderFlowMolio - Texts', () => {
       const mockSvgWithElementsBelow = `
         <svg width="200" height="100">
           <text id="text1"><tspan x="10" y="20" font-family="Arial" font-size="12">Short</tspan></text>
-          <rect x="10" y="40" width="50" height="20" fill="blue" />
-          <circle cx="50" cy="80" r="10" fill="red" />
+          <rect id="rect1" x="10" y="40" width="50" height="20" fill="blue" />
+          <circle id="circle1" cx="50" cy="80" r="10" fill="red" />
         </svg>
       `;
 
@@ -569,7 +569,7 @@ describe('renderFlowMolio - Texts', () => {
         <svg width="200" height="100">
           <text id="text1"><tspan x="10" y="20" font-family="Arial" font-size="12">Short</tspan></text>
           <g transform="translate(10, 50)">
-            <rect width="30" height="10" fill="green" />
+            <rect id="rect1" width="30" height="10" fill="green" />
           </g>
         </svg>
       `;
@@ -614,9 +614,9 @@ describe('renderFlowMolio - Texts', () => {
     it('should not shift elements that are above the text', async () => {
       const mockSvgWithElementsAbove = `
         <svg width="200" height="120">
-          <rect x="10" y="5" width="50" height="10" fill="blue" />
+          <rect id="rect1" x="10" y="5" width="50" height="10" fill="blue" />
           <text id="text1"><tspan x="10" y="30" font-family="Arial" font-size="12">Short</tspan></text>
-          <rect x="10" y="50" width="50" height="10" fill="red" />
+          <rect id="rect2" x="10" y="50" width="50" height="10" fill="red" />
         </svg>
       `;
 
@@ -673,7 +673,7 @@ describe('renderFlowMolio - Texts', () => {
       const mockSvgWithoutHeight = `
         <svg width="200">
           <text id="text1"><tspan x="10" y="20" font-family="Arial" font-size="12">Short</tspan></text>
-          <rect x="10" y="40" width="50" height="20" fill="blue" />
+          <rect id="rect1" x="10" y="40" width="50" height="20" fill="blue" />
         </svg>
       `;
 
@@ -723,7 +723,7 @@ describe('renderFlowMolio - Texts', () => {
       const mockSvgWithViewBox = `
         <svg width="200" height="100" viewBox="0 0 200 100">
           <text id="text1"><tspan x="10" y="20" font-family="Arial" font-size="12">Short</tspan></text>
-          <rect x="10" y="40" width="50" height="20" fill="blue" />
+          <rect id="rect1" x="10" y="40" width="50" height="20" fill="blue" />
         </svg>
       `;
 
@@ -784,7 +784,7 @@ describe('renderFlowMolio - Texts', () => {
       const mockSvgWithPath = `
         <svg width="200" height="100">
           <text id="text1"><tspan x="10" y="20" font-family="Arial" font-size="12">Short</tspan></text>
-          <path d="M 10 50 L 60 50 L 35 80 Z" fill="green" />
+          <path id="path1" d="M 10 50 L 60 50 L 35 80 Z" fill="green" />
         </svg>
       `;
 
@@ -832,7 +832,7 @@ describe('renderFlowMolio - Texts', () => {
       const mockSvgWithTransformedPath = `
         <svg width="200" height="100">
           <text id="text1"><tspan x="10" y="20" font-family="Arial" font-size="12">Short</tspan></text>
-          <path d="M 10 60 L 60 60 L 35 90 Z" transform="scale(1.5)" fill="blue" />
+          <path id="path1" d="M 10 60 L 60 60 L 35 90 Z" transform="scale(1.5)" fill="blue" />
         </svg>
       `;
 
@@ -911,8 +911,8 @@ describe('renderFlowMolio - Texts', () => {
 
     const sampleSvg = `
       <svg width="100" height="100">
-        <text><tspan x="0" y="0">Original Text</tspan></text>
-        <text><tspan x="0" y="0">Another Text</tspan></text>
+        <text id="fmo-text-1"><tspan x="0" y="0">Original Text</tspan></text>
+        <text id="fmo-text-2"><tspan x="0" y="0">Another Text</tspan></text>
       </svg>
     `;
 
@@ -936,7 +936,7 @@ describe('renderFlowMolio - Texts', () => {
     it('should update heights of background elements when text expands', async () => {
       const mockSvgWithBackground = `
         <svg width="375" height="826">
-          <rect width="375" height="826" fill="white"/>
+          <rect id="background" width="375" height="826" fill="white"/>
           <text id="text1"><tspan x="10" y="20" font-family="Arial" font-size="12">Short</tspan></text>
         </svg>
       `;
@@ -987,7 +987,7 @@ describe('renderFlowMolio - Texts', () => {
     it('should not update heights of non-background elements', async () => {
       const mockSvgWithSmallRect = `
         <svg width="375" height="200">
-          <rect x="10" y="10" width="50" height="30" fill="blue"/>
+          <rect id="small-rect" x="10" y="10" width="50" height="30" fill="blue"/>
           <text id="text1"><tspan x="10" y="60" font-family="Arial" font-size="12">Short</tspan></text>
         </svg>
       `;
