@@ -40,6 +40,121 @@ function getValueFromPath(obj: JSONValue, path: string): JSONValue | undefined {
 }
 
 /**
+ * Handles constrained width text rendering with line breaking and height updates
+ */
+async function applyConstrainedTextRendering(
+  svgTree: SVGElementNode,
+  targetElement: SVGElementNode,
+  dataString: string,
+  tspans: HTMLElement[],
+  widthValue: number,
+  tempDiv: HTMLElement,
+): Promise<void> {
+  // Calculate original height and bounds before modification
+  const { height: originalHeight, lineHeight: oldLineHeight } =
+    calculateTextElementHeight(targetElement);
+  const originalBounds = calculateTextBoundsSync(targetElement);
+
+  // For constrained width, break text into lines and generate tspans
+  const firstTspan = tspans[0];
+  const x = parseFloat(firstTspan.getAttribute('x') || '0');
+  const y = parseFloat(firstTspan.getAttribute('y') || '0');
+
+  // Extract font information from the first tspan for text measurement
+  const fontFamily = firstTspan.getAttribute('font-family') || 'Arial';
+  const fontSize = parseFloat(firstTspan.getAttribute('font-size') || '12');
+  const fontWeight = firstTspan.getAttribute('font-weight') || 'normal';
+  const letterSpacing = parseFloat(firstTspan.getAttribute('letter-spacing') || '0');
+
+  // Extract line spacing information
+  const lineSpacingAttr =
+    firstTspan.getAttribute('line-spacing') || firstTspan.getAttribute('line-height');
+  const lineSpacing = lineSpacingAttr ? parseFloat(lineSpacingAttr) - fontSize : 0;
+
+  const fontConfig: FontConfig = {
+    fontFamily,
+    fontSize,
+    fontWeight,
+    letterSpacing: letterSpacing || undefined,
+    lineSpacing: lineSpacing || undefined,
+  };
+
+  // Break text into lines based on width constraint
+  const lines = breakTextIntoLines(dataString, widthValue, fontConfig);
+
+  // Calculate line height from existing lines or fallback to dy/font size estimate
+  let lineHeight: number;
+  const existingLines = extractLinesFromElement(targetElement);
+  if (existingLines.length >= 2) {
+    // Use the difference between first and second line y-coordinates
+    lineHeight = Math.abs(existingLines[1].y - existingLines[0].y);
+  } else {
+    // Fallback to dy attribute or font size estimate
+    lineHeight = parseFloat(firstTspan.getAttribute('dy') || String(fontSize * 1.2));
+  }
+
+  // Generate tspan data for each line with line spacing
+  const tspanData = generateTspans(lines, x, y, lineHeight, lineSpacing);
+
+  // Clear existing tspans
+  tspans.forEach(tspan => tspan.remove());
+
+  // Create new tspans for each line
+  tspanData.forEach((data, index) => {
+    const newTspan = new HTMLElement('tspan', {});
+    newTspan.setAttribute('x', String(data.x));
+    newTspan.setAttribute('y', String(data.y));
+
+    // Copy attributes from the first tspan to maintain styling
+    if (index === 0) {
+      Object.entries(firstTspan.attributes).forEach(([name, value]) => {
+        if (name !== 'x' && name !== 'y') {
+          newTspan.setAttribute(name, value);
+        }
+      });
+    } else {
+      // For subsequent lines, copy all attributes except positioning
+      Object.entries(firstTspan.attributes).forEach(([name, value]) => {
+        if (name !== 'x' && name !== 'y' && name !== 'dy') {
+          newTspan.setAttribute(name, value);
+        }
+      });
+    }
+
+    newTspan.textContent = data.text;
+    tempDiv.appendChild(newTspan);
+  });
+
+  // Update the innerHTML
+  targetElement.innerHTML = tempDiv.innerHTML;
+
+  // Calculate new height and height delta
+  const { height: newHeight } = calculateTextElementHeight(targetElement, oldLineHeight);
+  const heightDelta = newHeight - originalHeight;
+
+  // If height changed, shift elements below and update container hierarchy
+  if (heightDelta !== 0) {
+    shiftElementsBelow(svgTree, y, heightDelta);
+    await handleTextHeightChange(svgTree, targetElement, heightDelta, originalBounds);
+  }
+}
+
+/**
+ * Handles natural text rendering without width constraints
+ */
+function applyNaturalTextRendering(
+  dataString: string,
+  tspans: HTMLElement[],
+): void {
+  // Natural strategy - use existing behavior
+  tspans[0].textContent = dataString;
+  // Clear the rest of the tspans
+  for (let i = 1; i < tspans.length; i++) {
+    tspans[i].textContent = '';
+  }
+}
+
+/**
  * Applies text data bindings and handles text layout changes
  */
 async function applyTextDataBindings({
@@ -88,100 +203,16 @@ async function applyTextDataBindings({
         const renderingStrategy = textComponent.renderingStrategy;
 
         if (renderingStrategy?.width.type === 'constrained') {
-          // Calculate original height and bounds before modification
-          const { height: originalHeight, lineHeight: oldLineHeight } =
-            calculateTextElementHeight(targetElement);
-          const originalBounds = calculateTextBoundsSync(targetElement);
-
-          // For constrained width, break text into lines and generate tspans
-          const firstTspan = tspans[0];
-          const x = parseFloat(firstTspan.getAttribute('x') || '0');
-          const y = parseFloat(firstTspan.getAttribute('y') || '0');
-
-          // Extract font information from the first tspan for text measurement
-          const fontFamily = firstTspan.getAttribute('font-family') || 'Arial';
-          const fontSize = parseFloat(firstTspan.getAttribute('font-size') || '12');
-          const fontWeight = firstTspan.getAttribute('font-weight') || 'normal';
-          const letterSpacing = parseFloat(firstTspan.getAttribute('letter-spacing') || '0');
-
-          // Extract line spacing information
-          const lineSpacingAttr =
-            firstTspan.getAttribute('line-spacing') || firstTspan.getAttribute('line-height');
-          const lineSpacing = lineSpacingAttr ? parseFloat(lineSpacingAttr) - fontSize : 0;
-
-          const fontConfig: FontConfig = {
-            fontFamily,
-            fontSize,
-            fontWeight,
-            letterSpacing: letterSpacing || undefined,
-            lineSpacing: lineSpacing || undefined,
-          };
-
-          // Break text into lines based on width constraint
-          const lines = breakTextIntoLines(dataString, renderingStrategy.width.value, fontConfig);
-
-          // Calculate line height from existing lines or fallback to dy/font size estimate
-          let lineHeight: number;
-          const existingLines = extractLinesFromElement(targetElement);
-          if (existingLines.length >= 2) {
-            // Use the difference between first and second line y-coordinates
-            lineHeight = Math.abs(existingLines[1].y - existingLines[0].y);
-          } else {
-            // Fallback to dy attribute or font size estimate
-            lineHeight = parseFloat(firstTspan.getAttribute('dy') || String(fontSize * 1.2));
-          }
-
-          // Generate tspan data for each line with line spacing
-          const tspanData = generateTspans(lines, x, y, lineHeight, lineSpacing);
-
-          // Clear existing tspans
-          tspans.forEach(tspan => tspan.remove());
-
-          // Create new tspans for each line
-          tspanData.forEach((data, index) => {
-            const newTspan = new HTMLElement('tspan', {});
-            newTspan.setAttribute('x', String(data.x));
-            newTspan.setAttribute('y', String(data.y));
-
-            // Copy attributes from the first tspan to maintain styling
-            if (index === 0) {
-              Object.entries(firstTspan.attributes).forEach(([name, value]) => {
-                if (name !== 'x' && name !== 'y') {
-                  newTspan.setAttribute(name, value);
-                }
-              });
-            } else {
-              // For subsequent lines, copy all attributes except positioning
-              Object.entries(firstTspan.attributes).forEach(([name, value]) => {
-                if (name !== 'x' && name !== 'y' && name !== 'dy') {
-                  newTspan.setAttribute(name, value);
-                }
-              });
-            }
-
-            newTspan.textContent = data.text;
-            tempDiv.appendChild(newTspan);
-          });
-
-          // Update the innerHTML
-          targetElement.innerHTML = tempDiv.innerHTML;
-
-          // Calculate new height and height delta
-          const { height: newHeight } = calculateTextElementHeight(targetElement, oldLineHeight);
-          const heightDelta = newHeight - originalHeight;
-
-          // If height changed, shift elements below and update container hierarchy
-          if (heightDelta !== 0) {
-            shiftElementsBelow(svgTree, y, heightDelta);
-            await handleTextHeightChange(svgTree, targetElement, heightDelta, originalBounds);
-          }
+          await applyConstrainedTextRendering(
+            svgTree,
+            targetElement,
+            dataString,
+            tspans,
+            renderingStrategy.width.value,
+            tempDiv,
+          );
         } else {
-          // Natural strategy - use existing behavior
-          tspans[0].textContent = dataString;
-          // Clear the rest of the tspans
-          for (let i = 1; i < tspans.length; i++) {
-            tspans[i].textContent = '';
-          }
+          applyNaturalTextRendering(dataString, tspans);
         }
 
         // Update the innerHTML
