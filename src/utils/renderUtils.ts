@@ -77,15 +77,15 @@ async function applyConstrainedTextRendering(
   const x = offset // Use offset instead of original x position
   const y = parseFloat(firstTspan.getAttribute('y') || '0')
 
-  // Extract font information from the first tspan for text measurement
-  const fontFamily = firstTspan.getAttribute('font-family') || 'Arial'
-  const fontSize = parseFloat(firstTspan.getAttribute('font-size') || '12')
-  const fontWeight = firstTspan.getAttribute('font-weight') || 'normal'
-  const letterSpacing = parseFloat(firstTspan.getAttribute('letter-spacing') || '0')
+  // Extract font information from the parent text element
+  const fontFamily = targetElement.attributes['font-family'] || 'Arial'
+  const fontSize = parseFloat(targetElement.attributes['font-size'] || '12')
+  const fontWeight = targetElement.attributes['font-weight'] || 'normal'
+  const letterSpacing = parseFloat(targetElement.attributes['letter-spacing'] || '0')
 
-  // Extract line spacing information
+  // Extract line spacing information from parent text element
   const lineSpacingAttr =
-    firstTspan.getAttribute('line-spacing') || firstTspan.getAttribute('line-height')
+    targetElement.attributes['line-spacing'] || targetElement.attributes['line-height']
   const lineSpacing = lineSpacingAttr ? parseFloat(lineSpacingAttr) - fontSize : 0
 
   const fontConfig: FontConfig = {

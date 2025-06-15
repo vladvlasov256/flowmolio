@@ -293,7 +293,7 @@ describe('renderFlowMolio - Texts', () => {
     it('should apply line spacing when specified in SVG attributes', async () => {
       const mockSvgWithLineSpacing = `
         <svg width="100" height="100">
-          <text id="text1"><tspan x="10" y="20" font-family="Arial" font-size="12" line-spacing="18">Original Text</tspan></text>
+          <text id="text1" font-family="Arial" font-size="12" line-spacing="18"><tspan x="10" y="20">Original Text</tspan></text>
         </svg>
       `;
 
@@ -351,7 +351,7 @@ describe('renderFlowMolio - Texts', () => {
     it('should use line-height attribute as alternative to line-spacing', async () => {
       const mockSvgWithLineHeight = `
         <svg width="100" height="100">
-          <text id="text1"><tspan x="10" y="20" font-family="Arial" font-size="12" line-height="20">Original Text</tspan></text>
+          <text id="text1" font-family="Arial" font-size="12" line-height="20"><tspan x="10" y="20">Original Text</tspan></text>
         </svg>
       `;
 
@@ -469,8 +469,8 @@ describe('renderFlowMolio - Texts', () => {
     it('should fallback to font size estimate when only one tspan exists', async () => {
       const mockSvgWithSingleTspan = `
         <svg width="100" height="100">
-          <text id="text1">
-            <tspan x="10" y="20" font-family="Arial" font-size="16">Single line</tspan>
+          <text id="text1" font-family="Arial" font-size="16">
+            <tspan x="10" y="20">Single line</tspan>
           </text>
         </svg>
       `;
