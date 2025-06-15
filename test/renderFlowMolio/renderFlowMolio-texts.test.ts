@@ -18,7 +18,9 @@ describe('renderFlowMolio - Texts', () => {
         renderingStrategy: {
           width: {
             type: 'natural'
-          }
+          },
+          horizontalAlignment: 'left',
+          offset: 0
         }
       };
 
@@ -40,7 +42,7 @@ describe('renderFlowMolio - Texts', () => {
 
       const result = await renderFlowMolio(layout, dataSources);
       expect(result).toEqual(
-        `<svg id="fmo-svg-1" width="100" height="100"><text id="text1"><tspan x="0" y="0">New Text</tspan></text><text id="text2"><tspan x="0" y="0">Another Text</tspan></text></svg>`,
+        `<svg id="fmo-svg-1" width="100" height="100"><text id="text1"><tspan x="0" y="0" text-anchor="start">New Text</tspan></text><text id="text2"><tspan x="0" y="0">Another Text</tspan></text></svg>`,
       );
     });
 
@@ -52,7 +54,9 @@ describe('renderFlowMolio - Texts', () => {
         renderingStrategy: {
           width: {
             type: 'natural'
-          }
+          },
+          horizontalAlignment: 'left',
+          offset: 0
         }
       };
 
@@ -78,7 +82,7 @@ describe('renderFlowMolio - Texts', () => {
 
       const result = await renderFlowMolio(layout, dataSources);
       expect(result).toEqual(
-        `<svg id="fmo-svg-1" width="100" height="100"><text id="text1"><tspan x="0" y="0">Nested Product Name</tspan></text><text id="text2"><tspan x="0" y="0">Another Text</tspan></text></svg>`,
+        `<svg id="fmo-svg-1" width="100" height="100"><text id="text1"><tspan x="0" y="0" text-anchor="start">Nested Product Name</tspan></text><text id="text2"><tspan x="0" y="0">Another Text</tspan></text></svg>`,
       );
     });
 
@@ -90,7 +94,9 @@ describe('renderFlowMolio - Texts', () => {
         renderingStrategy: {
           width: {
             type: 'natural'
-          }
+          },
+          horizontalAlignment: 'left',
+          offset: 0
         }
       };
 
@@ -122,7 +128,9 @@ describe('renderFlowMolio - Texts', () => {
         renderingStrategy: {
           width: {
             type: 'natural'
-          }
+          },
+          horizontalAlignment: 'left',
+          offset: 0
         }
       };
 
@@ -165,7 +173,9 @@ describe('renderFlowMolio - Texts', () => {
           width: {
             type: 'constrained',
             value: 50
-          }
+          },
+          horizontalAlignment: 'left',
+          offset: 0
         }
       };
 
@@ -188,7 +198,7 @@ describe('renderFlowMolio - Texts', () => {
       const result = await renderFlowMolio(layout, dataSources);
       
       // Should contain multiple tspan elements with different y coordinates
-      expect(result).toContain('<tspan x="10" y="20"');
+      expect(result).toContain('<tspan x="0" y="20"');
       expect(result).toContain('This is');
       // Should have broken the text into multiple lines
       const tspanCount = (result.match(/<tspan/g) || []).length;
@@ -204,7 +214,9 @@ describe('renderFlowMolio - Texts', () => {
           width: {
             type: 'constrained',
             value: 200
-          }
+          },
+          horizontalAlignment: 'left',
+          offset: 0
         }
       };
 
@@ -247,7 +259,9 @@ describe('renderFlowMolio - Texts', () => {
           width: {
             type: 'constrained',
             value: 30
-          }
+          },
+          horizontalAlignment: 'left',
+          offset: 0
         }
       };
 
@@ -291,7 +305,9 @@ describe('renderFlowMolio - Texts', () => {
           width: {
             type: 'constrained',
             value: 50
-          }
+          },
+          horizontalAlignment: 'left',
+          offset: 0
         }
       };
 
@@ -347,7 +363,9 @@ describe('renderFlowMolio - Texts', () => {
           width: {
             type: 'constrained',
             value: 50
-          }
+          },
+          horizontalAlignment: 'left',
+          offset: 0
         }
       };
 
@@ -406,7 +424,9 @@ describe('renderFlowMolio - Texts', () => {
           width: {
             type: 'constrained',
             value: 50
-          }
+          },
+          horizontalAlignment: 'left',
+          offset: 0
         }
       };
 
@@ -463,7 +483,9 @@ describe('renderFlowMolio - Texts', () => {
           width: {
             type: 'constrained',
             value: 50
-          }
+          },
+          horizontalAlignment: 'left',
+          offset: 0
         }
       };
 
@@ -522,7 +544,9 @@ describe('renderFlowMolio - Texts', () => {
           width: {
             type: 'constrained',
             value: 60
-          }
+          },
+          horizontalAlignment: 'left',
+          offset: 0
         }
       };
 
@@ -582,7 +606,9 @@ describe('renderFlowMolio - Texts', () => {
           width: {
             type: 'constrained',
             value: 50
-          }
+          },
+          horizontalAlignment: 'left',
+          offset: 0
         }
       };
 
@@ -628,7 +654,9 @@ describe('renderFlowMolio - Texts', () => {
           width: {
             type: 'constrained',
             value: 40
-          }
+          },
+          horizontalAlignment: 'left',
+          offset: 0
         }
       };
 
@@ -685,7 +713,9 @@ describe('renderFlowMolio - Texts', () => {
           width: {
             type: 'constrained',
             value: 50
-          }
+          },
+          horizontalAlignment: 'left',
+          offset: 0
         }
       };
 
@@ -735,7 +765,9 @@ describe('renderFlowMolio - Texts', () => {
           width: {
             type: 'constrained',
             value: 50
-          }
+          },
+          horizontalAlignment: 'left',
+          offset: 0
         }
       };
 
@@ -796,7 +828,9 @@ describe('renderFlowMolio - Texts', () => {
           width: {
             type: 'constrained',
             value: 50
-          }
+          },
+          horizontalAlignment: 'left',
+          offset: 0
         }
       };
 
@@ -844,7 +878,9 @@ describe('renderFlowMolio - Texts', () => {
           width: {
             type: 'constrained',
             value: 40
-          }
+          },
+          horizontalAlignment: 'left',
+          offset: 0
         }
       };
 
@@ -882,7 +918,9 @@ describe('renderFlowMolio - Texts', () => {
       renderingStrategy: {
         width: {
           type: 'natural'
-        }
+        },
+        horizontalAlignment: 'left',
+        offset: 0
       }
     };
 
@@ -893,7 +931,9 @@ describe('renderFlowMolio - Texts', () => {
       renderingStrategy: {
         width: {
           type: 'natural'
-        }
+        },
+        horizontalAlignment: 'left',
+        offset: 0
       }
     };
 
@@ -928,7 +968,7 @@ describe('renderFlowMolio - Texts', () => {
 
     const result = await renderFlowMolio(layout, dataSources);
     expect(result).toEqual(
-      `<svg id="fmo-svg-1" width="100" height="100"><text id="fmo-text-1"><tspan x="0" y="0">First</tspan></text><text id="fmo-text-2"><tspan x="0" y="0">Second</tspan></text></svg>`,
+      `<svg id="fmo-svg-1" width="100" height="100"><text id="fmo-text-1"><tspan x="0" y="0" text-anchor="start">First</tspan></text><text id="fmo-text-2"><tspan x="0" y="0" text-anchor="start">Second</tspan></text></svg>`,
     );
   });
 
@@ -949,7 +989,9 @@ describe('renderFlowMolio - Texts', () => {
           width: {
             type: 'constrained',
             value: 50
-          }
+          },
+          horizontalAlignment: 'left',
+          offset: 0
         }
       };
 
@@ -1000,7 +1042,9 @@ describe('renderFlowMolio - Texts', () => {
           width: {
             type: 'constrained',
             value: 50
-          }
+          },
+          horizontalAlignment: 'left',
+          offset: 0
         }
       };
 

@@ -211,7 +211,9 @@ describe('Recursive Height Update System', () => {
           width: {
             type: 'constrained',
             value: 350
-          }
+          },
+          horizontalAlignment: 'left',
+          offset: 20
         }
       };
 
@@ -284,7 +286,9 @@ describe('Recursive Height Update System', () => {
         type: 'text',
         elementId: 'text1',
         renderingStrategy: {
-          width: { type: 'constrained', value: 380 }
+          width: { type: 'constrained', value: 380 },
+          horizontalAlignment: 'left',
+          offset: 20
         }
       };
 
@@ -346,7 +350,9 @@ describe('Recursive Height Update System', () => {
         type: 'text',
         elementId: 'text1',
         renderingStrategy: {
-          width: { type: 'constrained', value: 380 }
+          width: { type: 'constrained', value: 380 },
+          horizontalAlignment: 'left',
+          offset: 20
         }
       };
 
@@ -418,7 +424,9 @@ describe('Recursive Height Update System', () => {
         type: 'text',
         elementId: 'contained-text',
         renderingStrategy: {
-          width: { type: 'constrained', value: 360 }
+          width: { type: 'constrained', value: 360 },
+          horizontalAlignment: 'left',
+          offset: 20
         }
       };
 
@@ -489,7 +497,9 @@ describe('Recursive Height Update System', () => {
           width: {
             type: 'constrained',
             value: 350
-          }
+          },
+          horizontalAlignment: 'left',
+          offset: 20
         }
       };
 
@@ -563,7 +573,9 @@ describe('Recursive Height Update System', () => {
           width: {
             type: 'constrained',
             value: 180
-          }
+          },
+          horizontalAlignment: 'left',
+          offset: 20
         }
       };
 
@@ -628,13 +640,21 @@ describe('Recursive Height Update System', () => {
           id: 'comp1',
           type: 'text',
           elementId: 'text1',
-          renderingStrategy: { width: { type: 'constrained', value: 380 } }
+          renderingStrategy: { 
+            width: { type: 'constrained', value: 380 },
+            horizontalAlignment: 'left',
+            offset: 20
+          }
         },
         {
           id: 'comp2', 
           type: 'text',
           elementId: 'text2',
-          renderingStrategy: { width: { type: 'constrained', value: 380 } }
+          renderingStrategy: { 
+            width: { type: 'constrained', value: 380 },
+            horizontalAlignment: 'left',
+            offset: 20
+          }
         }
       ];
 
@@ -694,7 +714,9 @@ describe('Recursive Height Update System', () => {
         type: 'text',
         elementId: 'nested-text',
         renderingStrategy: {
-          width: { type: 'constrained', value: 350 }
+          width: { type: 'constrained', value: 350 },
+          horizontalAlignment: 'left',
+          offset: 20
         }
       };
 

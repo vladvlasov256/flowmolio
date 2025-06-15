@@ -20,6 +20,21 @@ import {
 import { breakTextIntoLines, generateTspans, FontConfig } from './textUtils';
 
 /**
+ * Converts horizontal alignment to SVG text-anchor attribute value
+ */
+function getTextAnchor(horizontalAlignment: 'left' | 'center' | 'right'): string {
+  switch (horizontalAlignment) {
+    case 'center':
+      return 'middle';
+    case 'right':
+      return 'end';
+    case 'left':
+    default:
+      return 'start';
+  }
+}
+
+/**
  * Extracts a value from a nested object using a dot-notation path
  */
 function getValueFromPath(obj: JSONValue, path: string): JSONValue | undefined {
@@ -48,6 +63,8 @@ async function applyConstrainedTextRendering(
   dataString: string,
   tspans: HTMLElement[],
   widthValue: number,
+  horizontalAlignment: 'left' | 'center' | 'right',
+  offset: number,
   tempDiv: HTMLElement,
 ): Promise<void> {
   // Calculate original height and bounds before modification
@@ -57,7 +74,7 @@ async function applyConstrainedTextRendering(
 
   // For constrained width, break text into lines and generate tspans
   const firstTspan = tspans[0];
-  const x = parseFloat(firstTspan.getAttribute('x') || '0');
+  const x = offset; // Use offset instead of original x position
   const y = parseFloat(firstTspan.getAttribute('y') || '0');
 
   // Extract font information from the first tspan for text measurement
@@ -105,17 +122,20 @@ async function applyConstrainedTextRendering(
     newTspan.setAttribute('x', String(data.x));
     newTspan.setAttribute('y', String(data.y));
 
+    // Set text-anchor based on horizontal alignment
+    newTspan.setAttribute('text-anchor', getTextAnchor(horizontalAlignment));
+
     // Copy attributes from the first tspan to maintain styling
     if (index === 0) {
       Object.entries(firstTspan.attributes).forEach(([name, value]) => {
-        if (name !== 'x' && name !== 'y') {
+        if (name !== 'x' && name !== 'y' && name !== 'text-anchor') {
           newTspan.setAttribute(name, value);
         }
       });
     } else {
       // For subsequent lines, copy all attributes except positioning
       Object.entries(firstTspan.attributes).forEach(([name, value]) => {
-        if (name !== 'x' && name !== 'y' && name !== 'dy') {
+        if (name !== 'x' && name !== 'y' && name !== 'dy' && name !== 'text-anchor') {
           newTspan.setAttribute(name, value);
         }
       });
@@ -145,9 +165,17 @@ async function applyConstrainedTextRendering(
 function applyNaturalTextRendering(
   dataString: string,
   tspans: HTMLElement[],
+  horizontalAlignment: 'left' | 'center' | 'right',
+  offset: number,
 ): void {
-  // Natural strategy - use existing behavior
-  tspans[0].textContent = dataString;
+  // Natural strategy - use existing behavior but with alignment and offset
+  const firstTspan = tspans[0];
+  firstTspan.textContent = dataString;
+
+  // Update x position and text-anchor for alignment
+  firstTspan.setAttribute('x', String(offset));
+  firstTspan.setAttribute('text-anchor', getTextAnchor(horizontalAlignment));
+
   // Clear the rest of the tspans
   for (let i = 1; i < tspans.length; i++) {
     tspans[i].textContent = '';
@@ -202,17 +230,32 @@ async function applyTextDataBindings({
         // Check for rendering strategy
         const renderingStrategy = textComponent.renderingStrategy;
 
-        if (renderingStrategy?.width.type === 'constrained') {
-          await applyConstrainedTextRendering(
-            svgTree,
-            targetElement,
-            dataString,
-            tspans,
-            renderingStrategy.width.value,
-            tempDiv,
-          );
+        if (renderingStrategy) {
+          // Use rendering strategy values
+          const horizontalAlignment = renderingStrategy.horizontalAlignment;
+          const offset = renderingStrategy.offset;
+
+          if (renderingStrategy.width.type === 'constrained') {
+            await applyConstrainedTextRendering(
+              svgTree,
+              targetElement,
+              dataString,
+              tspans,
+              renderingStrategy.width.value,
+              horizontalAlignment,
+              offset,
+              tempDiv,
+            );
+          } else {
+            applyNaturalTextRendering(dataString, tspans, horizontalAlignment, offset);
+          }
         } else {
-          applyNaturalTextRendering(dataString, tspans);
+          // No rendering strategy - use legacy behavior (just replace text content)
+          tspans[0].textContent = dataString;
+          // Clear the rest of the tspans
+          for (let i = 1; i < tspans.length; i++) {
+            tspans[i].textContent = '';
+          }
         }
 
         // Update the innerHTML

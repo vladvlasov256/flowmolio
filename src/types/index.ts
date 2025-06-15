@@ -44,6 +44,8 @@ export type TextRenderingStrategy = {
     | {
         type: 'natural';
       };
+  horizontalAlignment: 'left' | 'center' | 'right';
+  offset: number;
 };
 
 export interface TextLayoutComponent extends BaseComponent {
