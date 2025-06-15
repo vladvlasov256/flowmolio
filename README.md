@@ -50,7 +50,13 @@ This sample project demonstrates how FlowMolio connects product data to a Figma-
 
 Experience the power of connected design by installing FlowMolio today:
 
-```yarn add flowmolio```
+```bash
+yarn add flowmolio fabric
+# or
+npm install flowmolio fabric
+```
+
+**Note:** FlowMolio requires [fabric.js](https://fabricjs.com/) as a peer dependency for accurate SVG element bounds calculation.
 
 Displaying a preview:
 

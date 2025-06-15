@@ -1,6 +1,6 @@
 export default {
   preset: 'ts-jest',
-  testEnvironment: 'node',
+  testEnvironment: 'jsdom',
   transform: {
     '^.+\\.ts$': 'ts-jest',
   },
@@ -11,4 +11,7 @@ export default {
   ],
   setupFilesAfterEnv: ['<rootDir>/test/setup.ts'],
   roots: ['<rootDir>/src', '<rootDir>/test'],
+  moduleNameMapper: {
+    '^fabric$': 'fabric/node'
+  },
 };

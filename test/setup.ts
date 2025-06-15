@@ -1,6 +1,13 @@
+import { TextEncoder, TextDecoder } from 'util';
+
 import { FontConfig } from "../src/utils/textUtils";
 
 import { approximateWidth } from "./utils/textMeasurement";
+
+// Polyfills for jsdom environment (required by fabric.js)
+declare const global: any;
+global.TextEncoder = TextEncoder;
+global.TextDecoder = TextDecoder;
 
 // Mock measureText to use approximation instead of canvas
 jest.mock('../src/utils/measureText', () => {  

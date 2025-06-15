@@ -107,7 +107,7 @@ export function shiftElementsBelow(svgTree: SVGElementNode, belowY: number, delt
     const yAttr = element.attributes.y;
     if (yAttr) {
       const y = parseFloat(yAttr);
-      
+
       // Element is below if its top position is below the threshold
       if (y > belowY) {
         element.attributes.y = String(y + deltaY);
@@ -118,7 +118,7 @@ export function shiftElementsBelow(svgTree: SVGElementNode, belowY: number, delt
     const cyAttr = element.attributes.cy;
     if (cyAttr) {
       const cy = parseFloat(cyAttr);
-      
+
       // Circle is below if its center is below the threshold
       if (cy > belowY) {
         element.attributes.cy = String(cy + deltaY);
@@ -131,7 +131,7 @@ export function shiftElementsBelow(svgTree: SVGElementNode, belowY: number, delt
     if (y1Attr && y2Attr) {
       const y1 = parseFloat(y1Attr);
       const y2 = parseFloat(y2Attr);
-      
+
       // Line is below if any of its endpoints is below the threshold
       if (y1 > belowY || y2 > belowY) {
         element.attributes.y1 = String(y1 + deltaY);
@@ -156,7 +156,7 @@ export function shiftElementsBelow(svgTree: SVGElementNode, belowY: number, delt
       if (translateMatch) {
         const x = parseFloat(translateMatch[1]);
         const y = parseFloat(translateMatch[2]);
-        
+
         // Transform is below if its y translation is below the threshold
         if (y > belowY) {
           element.attributes.transform = transformAttr.replace(
@@ -233,4 +233,3 @@ export function shiftElementsBelow(svgTree: SVGElementNode, belowY: number, delt
 
   processElement(svgTree);
 }
-
