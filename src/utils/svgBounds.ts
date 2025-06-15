@@ -18,7 +18,9 @@ export interface ElementBounds {
 /**
  * Loads all fabric.js objects from an SVG string and returns them indexed by ID
  */
-export async function loadAllFabricObjects(svgString: string): Promise<Record<string, FabricObject>> {
+export async function loadAllFabricObjects(
+  svgString: string,
+): Promise<Record<string, FabricObject>> {
   const fabricObjectsById: Record<string, FabricObject> = {};
 
   await loadSVGFromString(svgString, (element, obj) => {
@@ -566,5 +568,11 @@ export async function handleTextHeightChange(
       : originalBounds;
 
   // Start the recursive update from the text element
-  await updateElementAndAncestors(svgTree, textElement, boundsForContainment, deltaHeight, fabricObjectsById);
+  await updateElementAndAncestors(
+    svgTree,
+    textElement,
+    boundsForContainment,
+    deltaHeight,
+    fabricObjectsById,
+  );
 }

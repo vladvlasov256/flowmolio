@@ -70,7 +70,7 @@ export const FlowMolioPreview: React.FC<FlowMolioPreviewProps> = ({
     const doRender = () => {
       lastRenderTimeRef.current = Date.now();
       setIsLoading(true);
-      
+
       renderFlowMolio(actualLayout, dataSources)
         .then(result => {
           setRenderedSvg(result);
