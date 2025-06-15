@@ -208,10 +208,11 @@ export async function containsChangedElement(
     return false;
   }
   
-  // Special handling for group elements
-  // Groups can't have bounds calculated by fabric.js, but they can contain elements that do
-  if (tagName === 'g') {
-    // Check if any child of the group contains the changed element
+  // Special handling for container elements that can have children
+  // These elements can't have bounds calculated by fabric.js (or shouldn't), but they can contain elements that do
+  const containerElements = ['g', 'svg', 'symbol', 'marker', 'switch', 'a', 'foreignobject'];
+  if (containerElements.includes(tagName)) {
+    // Check if any child of the container contains the changed element
     for (const child of element.children) {
       if (await containsChangedElement(child, changedElementBounds, svgRoot)) {
         return true;
