@@ -422,14 +422,10 @@ describe('Recursive Height Update System', () => {
 
       const result = await renderFlowMolio(layout, dataSources);
 
-      // Debug: Log the result to see what's happening
-      console.log('Rendered SVG:', result);
-
       // Half-height background should be updated (contains the text at y=300)
       const halfBgMatch = result.match(/<rect[^>]*id="half-background"[^>]*height="([^"]*)"/);
       expect(halfBgMatch).toBeTruthy();
       const halfBgHeight = parseFloat(halfBgMatch![1]);
-      console.log('Half background height:', halfBgHeight);
       expect(halfBgHeight).toBeGreaterThan(300); // Should have expanded
 
       // Half-height clipPath should also be updated

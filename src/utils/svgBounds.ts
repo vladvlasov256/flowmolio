@@ -404,60 +404,18 @@ async function updateReferencedClipPaths(
         // Check for rect children in this specific clipPath
         for (const clipChild of child.children) {
           if (clipChild.tagName.toLowerCase() === 'rect') {
-            // Use the same containment logic as regular elements
-            // Check if this clipPath rect contains the changed element
-            try {
-              // Calculate bounds for this clipPath rect using fabric.js
-              const clipRectBounds = await calculateElementBounds(clipChild, svgTree);
+            // Simple attribute comparison - if clipPath height >= original bounds height, expand it
+            const clipRectY = parseFloat(clipChild.attributes.y || '0');
+            const clipRectHeight = parseFloat(clipChild.attributes.height || '0');
+            const clipBottom = clipRectY + clipRectHeight;
+            const changedBottom = changedElementBounds.y + changedElementBounds.height;
 
-              // Check if clipPath rect contains the changed element
-              const overlapTop = Math.max(clipRectBounds.y, changedElementBounds.y);
-              const overlapBottom = Math.min(
-                clipRectBounds.y + clipRectBounds.height,
-                changedElementBounds.y + changedElementBounds.height,
-              );
-
-              // If there's meaningful overlap, update the clipPath rect
-              if (overlapTop < overlapBottom) {
-                const overlapHeight = overlapBottom - overlapTop;
-                const changedElementHeight = changedElementBounds.height;
-
-                // Use same containment criteria as containsChangedElement
-                let shouldUpdate = false;
-                if (changedElementHeight < 5) {
-                  shouldUpdate = overlapHeight > 0;
-                } else {
-                  const overlapRatio = overlapHeight / changedElementHeight;
-                  shouldUpdate = overlapRatio >= 0.9;
-                }
-
-                if (shouldUpdate) {
-                  const currentHeight = parseFloat(clipChild.attributes.height || '0');
-                  const newHeight = Math.max(0, currentHeight + deltaHeight);
-                  clipChild.attributes.height = String(newHeight);
-                }
-              }
-            } catch {
-              // Fallback to the original heuristic if fabric.js fails for clipPath elements
-              const rectY = parseFloat(clipChild.attributes.y || '0');
-              const rectHeight = parseFloat(clipChild.attributes.height || '0');
-
-              // Get container dimensions for comparison
-              let containerHeight = 0;
-              if (svgTree.tagName.toLowerCase() === 'svg') {
-                containerHeight = parseFloat(svgTree.attributes.height || '0');
-              }
-
-              // Consider this a background rect if:
-              // 1. It starts near the top (y <= 10)
-              // 2. Its height is substantial (>= 90% of container height)
-              const isBackgroundRect = rectY <= 10 && rectHeight >= containerHeight * 0.9;
-
-              if (isBackgroundRect) {
-                const currentHeight = parseFloat(clipChild.attributes.height || '0');
-                const newHeight = Math.max(0, currentHeight + deltaHeight);
-                clipChild.attributes.height = String(newHeight);
-              }
+            // If the clipPath rect extends at least as far down as the original changed element bounds,
+            // then it should be expanded to accommodate the new height
+            if (clipBottom >= changedBottom) {
+              const currentHeight = parseFloat(clipChild.attributes.height || '0');
+              const newHeight = Math.max(0, currentHeight + deltaHeight);
+              clipChild.attributes.height = String(newHeight);
             }
           }
         }
