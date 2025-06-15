@@ -373,8 +373,23 @@ async function updateReferencedClipPaths(
         // Check for rect children in this specific clipPath
         for (const clipChild of child.children) {
           if (clipChild.tagName.toLowerCase() === 'rect') {
-            // Use the same logic as containsChangedElement but for clipPath rects
-            if (await containsChangedElement(clipChild, changedElementBounds, svgTree)) {
+            // For clipPath rects, use a simpler heuristic since fabric.js bounds might not work
+            // Check if this looks like a background/container rect that should expand
+            const rectY = parseFloat(clipChild.attributes.y || '0');
+            const rectHeight = parseFloat(clipChild.attributes.height || '0');
+            
+            // Get container dimensions for comparison
+            let containerHeight = 0;
+            if (svgTree.tagName.toLowerCase() === 'svg') {
+              containerHeight = parseFloat(svgTree.attributes.height || '0');
+            }
+            
+            // Consider this a background rect if:
+            // 1. It starts near the top (y <= 10)
+            // 2. Its height is substantial (>= 90% of container height)
+            const isBackgroundRect = rectY <= 10 && rectHeight >= containerHeight * 0.9;
+            
+            if (isBackgroundRect) {
               const currentHeight = parseFloat(clipChild.attributes.height || '0');
               const newHeight = Math.max(0, currentHeight + deltaHeight);
               clipChild.attributes.height = String(newHeight);
