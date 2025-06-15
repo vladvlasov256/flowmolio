@@ -32,12 +32,13 @@ export const FlowMolioPreview: React.FC<FlowMolioPreviewProps> = ({
   ...svgProps
 }) => {
   // Convert blueprint to layout if needed
+  // Memoize layout using a stable reference if its content is deeply equal
   const actualLayout = useMemo(() => {
     if (blueprint) {
       return convertBlueprintToLayout(blueprint);
     }
     return layout!;
-  }, [blueprint, layout]);
+  }, [blueprint, layout ? JSON.stringify(layout) : layout]);
 
   const [renderedSvg, setRenderedSvg] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
