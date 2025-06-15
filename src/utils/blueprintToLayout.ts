@@ -7,7 +7,7 @@ import {
   ColorReplacementComponent,
   ColorRole,
   Connection,
-} from '../types';
+} from '../types'
 
 /**
  * Converts a Blueprint (from FlowMolio Studio) to a Layout object that can be used with renderFlowMolio
@@ -18,7 +18,7 @@ export function convertBlueprintToLayout(blueprint: Blueprint): Layout {
     sourceNodeId: edge.source,
     sourceField: edge.sourceHandle || '',
     targetNodeId: edge.target,
-  }));
+  }))
 
   // Filter and convert nodes to components
   const components: Component[] = blueprint.nodes
@@ -31,17 +31,17 @@ export function convertBlueprintToLayout(blueprint: Blueprint): Layout {
             type: 'text',
             elementId: node.data.textElementId,
             renderingStrategy: node.data.renderingStrategy,
-          } as TextLayoutComponent;
+          } as TextLayoutComponent
 
         case 'imageLayout':
           return {
             id: node.id,
             type: 'image',
             elementId: node.data.imageElementId,
-          } as ImageLayoutComponent;
+          } as ImageLayoutComponent
 
         case 'colorNode': {
-          const data = node.data;
+          const data = node.data
           return {
             id: node.id,
             type: 'color',
@@ -52,18 +52,18 @@ export function convertBlueprintToLayout(blueprint: Blueprint): Layout {
               [ColorRole.STOP_COLOR]: data.enabledRoles?.[ColorRole.STOP_COLOR] ?? false,
             },
             elementIds: data.elementIds, // Optional property for filtering specific elements
-          } as ColorReplacementComponent;
+          } as ColorReplacementComponent
         }
 
         default:
           // This should never happen due to the filter above
-          throw new Error(`Unknown node type: ${node.type}`);
+          throw new Error(`Unknown node type: ${node.type}`)
       }
-    });
+    })
 
   return {
     svg: blueprint.svg,
     connections,
     components,
-  };
+  }
 }

@@ -1,29 +1,29 @@
-import parse from 'node-html-parser';
-import React, { useMemo, useState, useEffect, useRef } from 'react';
+import parse from 'node-html-parser'
+import React, { useMemo, useState, useEffect, useRef } from 'react'
 
-import { Layout, Blueprint, DataSources } from '../types';
-import { convertBlueprintToLayout } from '../utils/blueprintToLayout';
-import { renderFlowMolio } from '../utils/renderFlowMolio';
+import { Layout, Blueprint, DataSources } from '../types'
+import { convertBlueprintToLayout } from '../utils/blueprintToLayout'
+import { renderFlowMolio } from '../utils/renderFlowMolio'
 
 // Base props common to both variants
 interface BaseFlowMolioPreviewProps extends React.SVGProps<SVGSVGElement> {
-  dataSources: DataSources;
+  dataSources: DataSources
 }
 
 // Props when using layout
 interface FlowMolioPreviewWithLayoutProps extends BaseFlowMolioPreviewProps {
-  layout: Layout;
-  blueprint?: never;
+  layout: Layout
+  blueprint?: never
 }
 
 // Props when using blueprint
 interface FlowMolioPreviewWithBlueprintProps extends BaseFlowMolioPreviewProps {
-  blueprint: Blueprint;
-  layout?: never;
+  blueprint: Blueprint
+  layout?: never
 }
 
 // Union type for the final props
-type FlowMolioPreviewProps = FlowMolioPreviewWithLayoutProps | FlowMolioPreviewWithBlueprintProps;
+type FlowMolioPreviewProps = FlowMolioPreviewWithLayoutProps | FlowMolioPreviewWithBlueprintProps
 
 export const FlowMolioPreview: React.FC<FlowMolioPreviewProps> = ({
   layout,
@@ -35,15 +35,15 @@ export const FlowMolioPreview: React.FC<FlowMolioPreviewProps> = ({
   // Memoize layout using a stable reference if its content is deeply equal
   const actualLayout = useMemo(() => {
     if (blueprint) {
-      return convertBlueprintToLayout(blueprint);
+      return convertBlueprintToLayout(blueprint)
     }
-    return layout!;
-  }, [blueprint, layout ? JSON.stringify(layout) : layout]);
+    return layout!
+  }, [blueprint, layout ? JSON.stringify(layout) : layout])
 
-  const [renderedSvg, setRenderedSvg] = useState<string>('');
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const lastRenderTimeRef = useRef<number>(0);
-  const renderTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [renderedSvg, setRenderedSvg] = useState<string>('')
+  const [isLoading, setIsLoading] = useState<boolean>(false)
+  const lastRenderTimeRef = useRef<number>(0)
+  const renderTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const renderErrorSvg = (
     error: Error,
@@ -53,79 +53,79 @@ export const FlowMolioPreview: React.FC<FlowMolioPreviewProps> = ({
               <tspan x="10" dy="0">Rendering error:</tspan>
               <tspan x="10" dy="20">${error.message}</tspan>
             </text>
-          </svg>`;
+          </svg>`
 
   // Effect to handle async rendering with 500ms throttle
   useEffect(() => {
     if (!actualLayout || !dataSources) {
-      setRenderedSvg('');
-      setIsLoading(false);
-      return;
+      setRenderedSvg('')
+      setIsLoading(false)
+      return
     }
 
-    const now = Date.now();
-    const timeSinceLastRender = now - lastRenderTimeRef.current;
-    const throttleDelay = 500;
+    const now = Date.now()
+    const timeSinceLastRender = now - lastRenderTimeRef.current
+    const throttleDelay = 500
 
     const doRender = () => {
-      lastRenderTimeRef.current = Date.now();
-      setIsLoading(true);
+      lastRenderTimeRef.current = Date.now()
+      setIsLoading(true)
 
       renderFlowMolio(actualLayout, dataSources)
         .then(result => {
-          setRenderedSvg(result);
-          setIsLoading(false);
+          setRenderedSvg(result)
+          setIsLoading(false)
         })
         .catch(error => {
           // Convert error to SVG with text
-          const errorSvg = renderErrorSvg(error);
-          setRenderedSvg(errorSvg);
-          setIsLoading(false);
-        });
-    };
+          const errorSvg = renderErrorSvg(error)
+          setRenderedSvg(errorSvg)
+          setIsLoading(false)
+        })
+    }
 
     // Clear any existing timeout
     if (renderTimeoutRef.current) {
-      clearTimeout(renderTimeoutRef.current);
+      clearTimeout(renderTimeoutRef.current)
     }
 
     if (timeSinceLastRender >= throttleDelay) {
       // Enough time has passed, render immediately
-      doRender();
+      doRender()
     } else {
       // Not enough time has passed, schedule render for later
-      const remainingTime = throttleDelay - timeSinceLastRender;
-      renderTimeoutRef.current = setTimeout(doRender, remainingTime);
+      const remainingTime = throttleDelay - timeSinceLastRender
+      renderTimeoutRef.current = setTimeout(doRender, remainingTime)
     }
 
     // Cleanup function to clear timeout on unmount
     return () => {
       if (renderTimeoutRef.current) {
-        clearTimeout(renderTimeoutRef.current);
+        clearTimeout(renderTimeoutRef.current)
       }
-    };
-  }, [actualLayout, dataSources]);
+    }
+  }, [actualLayout, dataSources])
 
   const svg = useMemo(() => {
     if (!renderedSvg) {
-      return null;
+      return null
     }
-    const parsedSVG = parse(renderedSvg);
-    const svgElement = parsedSVG.querySelector('svg');
+    const parsedSVG = parse(renderedSvg)
+    const svgElement = parsedSVG.querySelector('svg')
     if (!svgElement) {
-      return null;
+      return null
     }
 
-    const props: Record<string, string> = {};
+    const props: Record<string, string> = {}
     Object.entries(svgElement.attributes).forEach(([key, value]) => {
-      props[key === 'class' ? 'className' : key] = value;
-    });
+      props[key === 'class' ? 'className' : key] = value
+    })
 
     return {
       props,
       innerHTML: svgElement.innerHTML,
-    };
-  }, [renderedSvg]);
+    }
+  }, [renderedSvg])
 
   if (isLoading) {
     // Return loading state as SVG
@@ -134,27 +134,27 @@ export const FlowMolioPreview: React.FC<FlowMolioPreviewProps> = ({
       <text x="10" y="30" font-family="Arial, sans-serif" font-size="14" fill="#666">
         <tspan x="10" dy="0">Loading...</tspan>
       </text>
-    </svg>`;
+    </svg>`
 
-    const parsedSVG = parse(loadingSvg);
-    const svgElement = parsedSVG.querySelector('svg');
+    const parsedSVG = parse(loadingSvg)
+    const svgElement = parsedSVG.querySelector('svg')
     if (!svgElement) {
-      return null;
+      return null
     }
 
-    const props: Record<string, string> = {};
+    const props: Record<string, string> = {}
     Object.entries(svgElement.attributes).forEach(([key, value]) => {
-      props[key === 'class' ? 'className' : key] = value;
-    });
+      props[key === 'class' ? 'className' : key] = value
+    })
 
     return (
       <svg dangerouslySetInnerHTML={{ __html: svgElement.innerHTML }} {...props} {...svgProps} />
-    );
+    )
   }
 
   if (!svg) {
-    return null;
+    return null
   }
 
-  return <svg dangerouslySetInnerHTML={{ __html: svg.innerHTML }} {...svg.props} {...svgProps} />;
-};
+  return <svg dangerouslySetInnerHTML={{ __html: svg.innerHTML }} {...svg.props} {...svgProps} />
+}

@@ -7,27 +7,27 @@ export enum ColorRole {
 /* eslint-enable no-unused-vars */
 
 export interface SVGElementNode {
-  id: string;
-  originalId?: string;
-  tagName: string;
-  attributes: Record<string, string>;
-  children: SVGElementNode[];
-  isText: boolean;
-  isImage: boolean;
-  innerHTML?: string;
-  textContent?: string;
+  id: string
+  originalId?: string
+  tagName: string
+  attributes: Record<string, string>
+  children: SVGElementNode[]
+  isText: boolean
+  isImage: boolean
+  innerHTML?: string
+  textContent?: string
 }
 
 // Connection between data source and target node
 export interface Connection {
-  sourceNodeId: string;
-  sourceField: string;
-  targetNodeId: string;
+  sourceNodeId: string
+  sourceField: string
+  targetNodeId: string
 }
 
 // Component type definitions
 export interface BaseComponent {
-  id: string;
+  id: string
 }
 
 /**
@@ -38,40 +38,40 @@ export interface BaseComponent {
 export type TextRenderingStrategy = {
   width:
     | {
-        type: 'constrained';
-        value: number;
+        type: 'constrained'
+        value: number
       }
     | {
-        type: 'natural';
-      };
-  horizontalAlignment: 'left' | 'center' | 'right';
-  offset: number;
-};
+        type: 'natural'
+      }
+  horizontalAlignment: 'left' | 'center' | 'right'
+  offset: number
+}
 
 export interface TextLayoutComponent extends BaseComponent {
-  type: 'text';
-  elementId: string;
-  renderingStrategy?: TextRenderingStrategy;
+  type: 'text'
+  elementId: string
+  renderingStrategy?: TextRenderingStrategy
 }
 
 export interface ImageLayoutComponent extends BaseComponent {
-  type: 'image';
-  elementId: string;
+  type: 'image'
+  elementId: string
 }
 
 export interface ColorReplacementComponent extends BaseComponent {
-  type: 'color';
-  color: string;
+  type: 'color'
+  color: string
   enabledRoles: {
-    [ColorRole.FILL]: boolean;
-    [ColorRole.STROKE]: boolean;
-    [ColorRole.STOP_COLOR]: boolean;
-  };
-  elementIds?: string[];
+    [ColorRole.FILL]: boolean
+    [ColorRole.STROKE]: boolean
+    [ColorRole.STOP_COLOR]: boolean
+  }
+  elementIds?: string[]
 }
 
 // Union type for all component types
-export type Component = TextLayoutComponent | ImageLayoutComponent | ColorReplacementComponent;
+export type Component = TextLayoutComponent | ImageLayoutComponent | ColorReplacementComponent
 
 // JSON value type representing any valid JSON value
 export type JSONValue =
@@ -80,57 +80,57 @@ export type JSONValue =
   | boolean
   | null
   | JSONValue[]
-  | { [key: string]: JSONValue };
+  | { [key: string]: JSONValue }
 
 // Data sources type - a record of data source IDs to JSON objects
-export type DataSources = Record<string, JSONValue>;
+export type DataSources = Record<string, JSONValue>
 
 // Layout containing SVG, connections, and components
 export interface Layout {
-  svg: string;
-  connections: Connection[];
-  components: Component[];
+  svg: string
+  connections: Connection[]
+  components: Component[]
 }
 
 // Data binding context for applying values to elements
 export interface DataBindingContext {
-  svgTree: SVGElementNode;
-  connections: Connection[];
-  dataSources: DataSources;
-  components?: Component[];
+  svgTree: SVGElementNode
+  connections: Connection[]
+  dataSources: DataSources
+  components?: Component[]
 }
 
 // Generic node structure (matches React Flow Node structure)
 export interface BlueprintNode {
-  id: string;
-  type?: string;
+  id: string
+  type?: string
   position: {
-    x: number;
-    y: number;
-  };
-  data: any;
-  [key: string]: any; // Allow additional properties
+    x: number
+    y: number
+  }
+  data: any
+  [key: string]: any // Allow additional properties
 }
 
 // Generic edge structure (matches React Flow Edge structure)
 export interface BlueprintEdge {
-  id: string;
-  source: string;
-  target: string;
-  sourceHandle?: string | null;
-  targetHandle?: string | null;
-  data?: any;
-  [key: string]: any; // Allow additional properties
+  id: string
+  source: string
+  target: string
+  sourceHandle?: string | null
+  targetHandle?: string | null
+  data?: any
+  [key: string]: any // Allow additional properties
 }
 
 // Blueprint represents the exported project from FlowMolio Studio
 export interface Blueprint {
   // SVG markup string
-  svg: string;
+  svg: string
 
   // Nodes (contains all node types including UI-specific data)
-  nodes: BlueprintNode[];
+  nodes: BlueprintNode[]
 
   // Edges (contains connection information)
-  edges: BlueprintEdge[];
+  edges: BlueprintEdge[]
 }

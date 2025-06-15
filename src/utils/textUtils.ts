@@ -1,17 +1,17 @@
-import { measureText } from './measureText';
+import { measureText } from './measureText'
 
 export interface FontConfig {
-  fontFamily: string;
-  fontSize: number;
-  fontWeight?: string | number;
-  letterSpacing?: number;
-  lineSpacing?: number;
+  fontFamily: string
+  fontSize: number
+  fontWeight?: string | number
+  letterSpacing?: number
+  lineSpacing?: number
 }
 
 export interface TspanData {
-  x: number;
-  y: number;
-  text: string;
+  x: number
+  y: number
+  text: string
 }
 
 export function breakTextIntoLines(
@@ -20,43 +20,43 @@ export function breakTextIntoLines(
   fontConfig: FontConfig,
 ): string[] {
   // First split by line breaks, then handle word wrapping for each line
-  const textLines = text.split(/\r?\n/);
-  const finalLines: string[] = [];
+  const textLines = text.split(/\r?\n/)
+  const finalLines: string[] = []
 
   for (const textLine of textLines) {
     if (textLine.trim() === '') {
       // Empty line - preserve it
-      finalLines.push('');
-      continue;
+      finalLines.push('')
+      continue
     }
 
     // Word wrap this line
-    const words = textLine.split(' ');
-    let currentLine = '';
+    const words = textLine.split(' ')
+    let currentLine = ''
 
     for (const word of words) {
-      const testLine = currentLine ? `${currentLine} ${word}` : word;
-      const testWidth = measureText(testLine, fontConfig);
+      const testLine = currentLine ? `${currentLine} ${word}` : word
+      const testWidth = measureText(testLine, fontConfig)
 
       if (testWidth <= maxWidth) {
-        currentLine = testLine;
+        currentLine = testLine
       } else {
         if (currentLine) {
-          finalLines.push(currentLine);
-          currentLine = word;
+          finalLines.push(currentLine)
+          currentLine = word
         } else {
           // Single word is too long - handle overflow
-          finalLines.push(word);
+          finalLines.push(word)
         }
       }
     }
 
     if (currentLine) {
-      finalLines.push(currentLine);
+      finalLines.push(currentLine)
     }
   }
 
-  return finalLines;
+  return finalLines
 }
 
 export function generateTspans(
@@ -70,5 +70,5 @@ export function generateTspans(
     x: startX,
     y: startY + index * (lineHeight + lineSpacing),
     text: line,
-  }));
+  }))
 }
