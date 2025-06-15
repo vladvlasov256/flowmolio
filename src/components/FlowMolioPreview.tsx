@@ -52,7 +52,15 @@ export const FlowMolioPreview: React.FC<FlowMolioPreviewProps> = ({
           setIsLoading(false);
         })
         .catch(error => {
-          setRenderedSvg(`<div>Rendering error: ${error.message}</div>`);
+          // Convert error to SVG with text
+          const errorSvg = `<svg width="400" height="100" xmlns="http://www.w3.org/2000/svg">
+            <rect width="100%" height="100%" fill="#ffebee" stroke="#f44336" stroke-width="1"/>
+            <text x="10" y="30" font-family="Arial, sans-serif" font-size="14" fill="#d32f2f">
+              <tspan x="10" dy="0">Rendering error:</tspan>
+              <tspan x="10" dy="20">${error.message}</tspan>
+            </text>
+          </svg>`;
+          setRenderedSvg(errorSvg);
           setIsLoading(false);
         });
     } else {
@@ -83,8 +91,28 @@ export const FlowMolioPreview: React.FC<FlowMolioPreviewProps> = ({
   }, [renderedSvg]);
 
   if (isLoading) {
-    // Optional: return loading state
-    return <div>Loading...</div>;
+    // Return loading state as SVG
+    const loadingSvg = `<svg width="200" height="50" xmlns="http://www.w3.org/2000/svg">
+      <rect width="100%" height="100%" fill="#f5f5f5" stroke="#ccc" stroke-width="1"/>
+      <text x="10" y="30" font-family="Arial, sans-serif" font-size="14" fill="#666">
+        <tspan x="10" dy="0">Loading...</tspan>
+      </text>
+    </svg>`;
+
+    const parsedSVG = parse(loadingSvg);
+    const svgElement = parsedSVG.querySelector('svg');
+    if (!svgElement) {
+      return null;
+    }
+
+    const props: Record<string, string> = {};
+    Object.entries(svgElement.attributes).forEach(([key, value]) => {
+      props[key === 'class' ? 'className' : key] = value;
+    });
+
+    return (
+      <svg dangerouslySetInnerHTML={{ __html: svgElement.innerHTML }} {...props} {...svgProps} />
+    );
   }
 
   if (!svg) {

@@ -3,15 +3,14 @@ import { renderFlowMolio } from '../../src/utils/renderFlowMolio';
 
 describe('renderFlowMolio', () => {
   describe('Basic functionality', () => {
-    it('should return error message when no SVG template provided', async () => {
+    it('should throw error when no SVG template provided', async () => {
       const layout: Layout = {
         svg: '',
         connections: [],
         components: [],
       };
 
-      const result = await renderFlowMolio(layout, {});
-      expect(result).toBe('<div>No SVG template provided</div>');
+      await expect(renderFlowMolio(layout, {})).rejects.toThrow('No SVG template provided');
     });
 
     it('should handle empty preview object gracefully', async () => {
@@ -25,15 +24,14 @@ describe('renderFlowMolio', () => {
       expect(result).toEqual('<svg id="fmo-svg-1" />');
     });
 
-    it('should return error message when SVG parsing fails', async () => {
+    it('should throw error when SVG parsing fails', async () => {
       const layout: Layout = {
         svg: 'invalid-svg',
         connections: [],
         components: [],
       };
 
-      const result = await renderFlowMolio(layout, {});
-      expect(result).toContain('Rendering error:');
+      await expect(renderFlowMolio(layout, {})).rejects.toThrow('SVG parsing failed:');
     });
   });
 

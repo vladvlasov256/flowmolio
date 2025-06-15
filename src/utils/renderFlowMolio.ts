@@ -9,24 +9,20 @@ import { parseSVG } from './svgUtils';
  */
 export async function renderFlowMolio(layout: Layout, dataSources: DataSources): Promise<string> {
   if (!layout.svg) {
-    return '<div>No SVG template provided</div>';
+    throw new Error('No SVG template provided');
   }
 
-  try {
-    // Parse the SVG
-    const svgTree = parseSVG(layout.svg);
+  // Parse the SVG
+  const svgTree = parseSVG(layout.svg);
 
-    // Apply data bindings (includes text, image, and color components)
-    await applyDataBindings({
-      svgTree,
-      connections: layout.connections,
-      dataSources,
-      components: layout.components || [],
-    });
+  // Apply data bindings (includes text, image, and color components)
+  await applyDataBindings({
+    svgTree,
+    connections: layout.connections,
+    dataSources,
+    components: layout.components || [],
+  });
 
-    // Serialize the modified SVG back to string
-    return serializeSVG(svgTree);
-  } catch (error) {
-    return `<div>Rendering error: ${(error as Error).message}</div>`;
-  }
+  // Serialize the modified SVG back to string
+  return serializeSVG(svgTree);
 }
