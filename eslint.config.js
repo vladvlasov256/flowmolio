@@ -34,6 +34,8 @@ export default [
         React: 'readonly',
         console: 'readonly',
         global: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
         ...jestPlugin.environments.globals.globals,
       },
     },

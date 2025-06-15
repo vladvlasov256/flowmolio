@@ -1,5 +1,5 @@
 import parse from 'node-html-parser';
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 
 import { Layout, Blueprint, DataSources } from '../types';
 import { convertBlueprintToLayout } from '../utils/blueprintToLayout';
@@ -42,6 +42,8 @@ export const FlowMolioPreview: React.FC<FlowMolioPreviewProps> = ({
 
   const [renderedSvg, setRenderedSvg] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const lastRenderTimeRef = useRef<number>(0);
+  const renderTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const renderErrorSvg = (
     error: Error,
@@ -53,10 +55,22 @@ export const FlowMolioPreview: React.FC<FlowMolioPreviewProps> = ({
             </text>
           </svg>`;
 
-  // Effect to handle async rendering
+  // Effect to handle async rendering with 500ms throttle
   useEffect(() => {
-    if (actualLayout && dataSources) {
+    if (!actualLayout || !dataSources) {
+      setRenderedSvg('');
+      setIsLoading(false);
+      return;
+    }
+
+    const now = Date.now();
+    const timeSinceLastRender = now - lastRenderTimeRef.current;
+    const throttleDelay = 500;
+
+    const doRender = () => {
+      lastRenderTimeRef.current = Date.now();
       setIsLoading(true);
+      
       renderFlowMolio(actualLayout, dataSources)
         .then(result => {
           setRenderedSvg(result);
@@ -68,10 +82,28 @@ export const FlowMolioPreview: React.FC<FlowMolioPreviewProps> = ({
           setRenderedSvg(errorSvg);
           setIsLoading(false);
         });
-    } else {
-      setRenderedSvg('');
-      setIsLoading(false);
+    };
+
+    // Clear any existing timeout
+    if (renderTimeoutRef.current) {
+      clearTimeout(renderTimeoutRef.current);
     }
+
+    if (timeSinceLastRender >= throttleDelay) {
+      // Enough time has passed, render immediately
+      doRender();
+    } else {
+      // Not enough time has passed, schedule render for later
+      const remainingTime = throttleDelay - timeSinceLastRender;
+      renderTimeoutRef.current = setTimeout(doRender, remainingTime);
+    }
+
+    // Cleanup function to clear timeout on unmount
+    return () => {
+      if (renderTimeoutRef.current) {
+        clearTimeout(renderTimeoutRef.current);
+      }
+    };
   }, [actualLayout, dataSources]);
 
   const svg = useMemo(() => {
