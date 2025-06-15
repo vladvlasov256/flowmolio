@@ -16,21 +16,9 @@ export interface ElementBounds {
 }
 
 /**
- * Calculate element bounds using fabric.js for accurate SVG rendering
+ * Loads all fabric.js objects from an SVG string and returns them indexed by ID
  */
-async function calculateElementBoundsWithFabric(
-  svgString: string,
-  targetElement: SVGElementNode,
-): Promise<ElementBounds> {
-  const elementId = targetElement?.id;
-
-  // Require ID for fabric.js bounds calculation
-  if (!elementId) {
-    throw new Error(
-      `Element must have an ID for fabric.js bounds calculation: ${targetElement.tagName}`,
-    );
-  }
-
+export async function loadAllFabricObjects(svgString: string): Promise<Record<string, FabricObject>> {
   const fabricObjectsById: Record<string, FabricObject> = {};
 
   await loadSVGFromString(svgString, (element, obj) => {
@@ -39,6 +27,25 @@ async function calculateElementBoundsWithFabric(
       fabricObjectsById[fabricElementId] = obj;
     }
   });
+
+  return fabricObjectsById;
+}
+
+/**
+ * Calculate element bounds using pre-loaded fabric objects
+ */
+function calculateElementBoundsFromFabricObjects(
+  fabricObjectsById: Record<string, FabricObject>,
+  targetElement: SVGElementNode,
+): ElementBounds {
+  const elementId = targetElement?.id;
+
+  // Require ID for fabric.js bounds calculation
+  if (!elementId) {
+    throw new Error(
+      `Element must have an ID for fabric.js bounds calculation: ${targetElement.tagName}`,
+    );
+  }
 
   const fabricObject = fabricObjectsById[elementId];
   if (fabricObject) {
@@ -53,8 +60,20 @@ async function calculateElementBoundsWithFabric(
 
   // If element with ID not found, throw an error for debugging
   throw new Error(
-    `Element with ID "${elementId}" not found in fabric.js SVG parsing. Check if the element exists in the SVG string.`,
+    `Element with ID "${elementId}" not found in fabric.js objects. Check if the element exists in the SVG string.`,
   );
+}
+
+/**
+ * Legacy function - Calculate element bounds using fabric.js for accurate SVG rendering
+ * @deprecated Use loadAllFabricObjects + calculateElementBoundsFromFabricObjects for better performance
+ */
+async function calculateElementBoundsWithFabric(
+  svgString: string,
+  targetElement: SVGElementNode,
+): Promise<ElementBounds> {
+  const fabricObjectsById = await loadAllFabricObjects(svgString);
+  return calculateElementBoundsFromFabricObjects(fabricObjectsById, targetElement);
 }
 
 /**
@@ -198,11 +217,11 @@ export function calculateTextBoundsSync(element: SVGElementNode): ElementBounds 
  * An element "contains" the changed element if their bounds intersect
  * for at least 90% of the changed element's height.
  */
-export async function containsChangedElement(
+export function containsChangedElement(
   element: SVGElementNode,
   changedElementBounds: ElementBounds,
-  svgRoot: SVGElementNode,
-): Promise<boolean> {
+  fabricObjectsById: Record<string, FabricObject>,
+): boolean {
   const tagName = element.tagName.toLowerCase();
 
   // Ignore elements that don't have visual bounds or make no sense for containment
@@ -228,39 +247,44 @@ export async function containsChangedElement(
   if (containerElements.includes(tagName)) {
     // Check if any child of the container contains the changed element
     for (const child of element.children) {
-      if (await containsChangedElement(child, changedElementBounds, svgRoot)) {
+      if (containsChangedElement(child, changedElementBounds, fabricObjectsById)) {
         return true;
       }
     }
     return false;
   }
 
-  const elementBounds = await calculateElementBounds(element, svgRoot);
+  try {
+    const elementBounds = calculateElementBoundsFromFabricObjects(fabricObjectsById, element);
 
-  // Calculate vertical overlap between the two elements
-  const overlapTop = Math.max(elementBounds.y, changedElementBounds.y);
-  const overlapBottom = Math.min(
-    elementBounds.y + elementBounds.height,
-    changedElementBounds.y + changedElementBounds.height,
-  );
+    // Calculate vertical overlap between the two elements
+    const overlapTop = Math.max(elementBounds.y, changedElementBounds.y);
+    const overlapBottom = Math.min(
+      elementBounds.y + elementBounds.height,
+      changedElementBounds.y + changedElementBounds.height,
+    );
 
-  // If there's no overlap, return false
-  if (overlapTop >= overlapBottom) {
+    // If there's no overlap, return false
+    if (overlapTop >= overlapBottom) {
+      return false;
+    }
+
+    const overlapHeight = overlapBottom - overlapTop;
+    const changedElementHeight = changedElementBounds.height;
+
+    // Element contains the changed element if there's meaningful overlap
+    // For very small elements, any overlap counts
+    // For larger elements, require at least 90% overlap
+    if (changedElementHeight < 5) {
+      return overlapHeight > 0;
+    }
+
+    const overlapRatio = overlapHeight / changedElementHeight;
+    return overlapRatio >= 0.9;
+  } catch {
+    // If bounds calculation fails, assume no containment
     return false;
   }
-
-  const overlapHeight = overlapBottom - overlapTop;
-  const changedElementHeight = changedElementBounds.height;
-
-  // Element contains the changed element if there's meaningful overlap
-  // For very small elements, any overlap counts
-  // For larger elements, require at least 90% overlap
-  if (changedElementHeight < 5) {
-    return overlapHeight > 0;
-  }
-
-  const overlapRatio = overlapHeight / changedElementHeight;
-  return overlapRatio >= 0.9;
 }
 
 /**
@@ -272,6 +296,7 @@ export async function updateContainingSiblings(
   changedElementBounds: ElementBounds,
   deltaHeight: number,
   svgRoot: SVGElementNode,
+  fabricObjectsById: Record<string, FabricObject>,
   processedElements: Set<SVGElementNode> = new Set(),
 ): Promise<void> {
   // First pass: try to find elements that contain the changed element
@@ -284,7 +309,7 @@ export async function updateContainingSiblings(
       continue;
     }
 
-    if (await containsChangedElement(child, changedElementBounds, svgRoot)) {
+    if (containsChangedElement(child, changedElementBounds, fabricObjectsById)) {
       elementsToUpdate.push(child);
     }
   }
@@ -334,6 +359,7 @@ export async function updateContainingSiblings(
           changedElementBounds,
           deltaHeight,
           svgRoot,
+          fabricObjectsById,
           processedElements,
         );
         break;
@@ -456,6 +482,7 @@ export async function updateElementAndAncestors(
   changedElement: SVGElementNode,
   changedElementOriginalBounds: ElementBounds,
   deltaHeight: number,
+  fabricObjectsById: Record<string, FabricObject>,
 ): Promise<void> {
   if (deltaHeight === 0) return;
 
@@ -486,6 +513,7 @@ export async function updateElementAndAncestors(
       changedElementOriginalBounds,
       deltaHeight,
       svgTree,
+      fabricObjectsById,
       processedElements,
     );
 
@@ -526,6 +554,10 @@ export async function handleTextHeightChange(
   deltaHeight: number,
   originalBounds: ElementBounds,
 ): Promise<void> {
+  // Load fabric objects once for all bounds calculations
+  const svgString = serializeSVG(svgTree);
+  const fabricObjectsById = await loadAllFabricObjects(svgString);
+
   // For very small text elements, use expanded bounds for containment detection
   // This ensures backgrounds get updated even for single-line text that expands
   const boundsForContainment =
@@ -534,5 +566,5 @@ export async function handleTextHeightChange(
       : originalBounds;
 
   // Start the recursive update from the text element
-  await updateElementAndAncestors(svgTree, textElement, boundsForContainment, deltaHeight);
+  await updateElementAndAncestors(svgTree, textElement, boundsForContainment, deltaHeight, fabricObjectsById);
 }

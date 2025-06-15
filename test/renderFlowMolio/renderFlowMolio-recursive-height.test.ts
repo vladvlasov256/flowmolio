@@ -1,7 +1,7 @@
 import { Component, Connection, Layout, DataSources } from '../../src/types';
 import { renderFlowMolio } from '../../src/utils/renderFlowMolio';
-import { calculateElementBounds, calculateSingleElementBounds, containsChangedElement, updateContainingSiblings } from '../../src/utils/svgBounds';
-import { parseSVG } from '../../src/utils/svgUtils';
+import { calculateElementBounds, calculateSingleElementBounds, containsChangedElement, updateContainingSiblings, loadAllFabricObjects } from '../../src/utils/svgBounds';
+import { parseSVG, serializeSVG } from '../../src/utils/svgUtils';
 
 describe('Recursive Height Update System', () => {
   describe('calculateElementBounds', () => {
@@ -61,17 +61,21 @@ describe('Recursive Height Update System', () => {
         </svg>
       `);
 
+      // Load fabric objects once
+      const svgString = serializeSVG(svgTree);
+      const fabricObjectsById = await loadAllFabricObjects(svgString);
+
       // Simulate a text element positioned at y=100 with height=20
       const changedElementBounds = { x: 10, y: 100, width: 80, height: 20 };
       
       // First rect: contains the changed element (y=0, height=200 fully contains y=100-120)
-      expect(await containsChangedElement(svgTree.children[0], changedElementBounds, svgTree)).toBe(true);
+      expect(containsChangedElement(svgTree.children[0], changedElementBounds, fabricObjectsById)).toBe(true);
       
       // Second rect: contains the changed element (y=0, height=180 fully contains y=100-120)
-      expect(await containsChangedElement(svgTree.children[1], changedElementBounds, svgTree)).toBe(true);
+      expect(containsChangedElement(svgTree.children[1], changedElementBounds, fabricObjectsById)).toBe(true);
       
       // Third rect: contains the changed element (y=50, height=150 → bottom=200, contains y=100-120)
-      expect(await containsChangedElement(svgTree.children[2], changedElementBounds, svgTree)).toBe(true);
+      expect(containsChangedElement(svgTree.children[2], changedElementBounds, fabricObjectsById)).toBe(true);
     });
 
     it('should detect non-containing elements', async () => {
@@ -86,15 +90,19 @@ describe('Recursive Height Update System', () => {
         </svg>
       `);
 
+      // Load fabric objects once
+      const svgString = serializeSVG(svgTree);
+      const fabricObjectsById = await loadAllFabricObjects(svgString);
+
       // Simulate a text element positioned at y=100 with height=20
       const changedElementBounds = { x: 10, y: 100, width: 80, height: 20 };
       
-      expect(await containsChangedElement(svgTree.children[0], changedElementBounds, svgTree)).toBe(false); // rect above (y=0-50)
-      expect(await containsChangedElement(svgTree.children[1], changedElementBounds, svgTree)).toBe(false); // rect below (y=150-200)
-      expect(await containsChangedElement(svgTree.children[2], changedElementBounds, svgTree)).toBe(false); // text (no meaningful height)
+      expect(containsChangedElement(svgTree.children[0], changedElementBounds, fabricObjectsById)).toBe(false); // rect above (y=0-50)
+      expect(containsChangedElement(svgTree.children[1], changedElementBounds, fabricObjectsById)).toBe(false); // rect below (y=150-200)
+      expect(containsChangedElement(svgTree.children[2], changedElementBounds, fabricObjectsById)).toBe(false); // text (no meaningful height)
       
       const group = svgTree.children[3];
-      expect(await containsChangedElement(group.children[0], changedElementBounds, svgTree)).toBe(true); // rect (contains full-height rect)
+      expect(containsChangedElement(group.children[0], changedElementBounds, fabricObjectsById)).toBe(true); // rect (contains full-height rect)
     });
 
     it('should handle edge cases with partial overlap', async () => {
@@ -105,14 +113,18 @@ describe('Recursive Height Update System', () => {
         </svg>
       `);
 
+      // Load fabric objects once
+      const svgString = serializeSVG(svgTree);
+      const fabricObjectsById = await loadAllFabricObjects(svgString);
+
       // Text at y=100 with height=20 (y=100-120)
       const changedElementBounds = { x: 10, y: 100, width: 80, height: 20 };
       
       // First rect: y=0-110, overlaps y=100-110 (10px out of 20px = 50% < 90%)
-      expect(await containsChangedElement(svgTree.children[0], changedElementBounds, svgTree)).toBe(false);
+      expect(containsChangedElement(svgTree.children[0], changedElementBounds, fabricObjectsById)).toBe(false);
       
       // Second rect: y=90-200, overlaps y=100-120 (20px out of 20px = 100% >= 90%)
-      expect(await containsChangedElement(svgTree.children[1], changedElementBounds, svgTree)).toBe(true);
+      expect(containsChangedElement(svgTree.children[1], changedElementBounds, fabricObjectsById)).toBe(true);
     });
   });
 
@@ -125,9 +137,13 @@ describe('Recursive Height Update System', () => {
         </svg>
       `);
 
+      // Load fabric objects once
+      const svgString = serializeSVG(svgTree);
+      const fabricObjectsById = await loadAllFabricObjects(svgString);
+
       // Simulate a text element that is contained in the first rect but not the second
       const changedElementBounds = { x: 20, y: 50, width: 60, height: 20 };
-      await updateContainingSiblings(svgTree, changedElementBounds, 50, svgTree);
+      await updateContainingSiblings(svgTree, changedElementBounds, 50, svgTree, fabricObjectsById);
 
       // First rect should be updated (contains the changed element)
       expect(svgTree.children[0].attributes.height).toBe('250');
@@ -147,9 +163,13 @@ describe('Recursive Height Update System', () => {
         </svg>
       `);
 
+      // Load fabric objects once
+      const svgString = serializeSVG(svgTree);
+      const fabricObjectsById = await loadAllFabricObjects(svgString);
+
       // Simulate a text element that is contained in the group
       const changedElementBounds = { x: 20, y: 100, width: 60, height: 20 };
-      await updateContainingSiblings(svgTree, changedElementBounds, 50, svgTree);
+      await updateContainingSiblings(svgTree, changedElementBounds, 50, svgTree, fabricObjectsById);
 
       // Group should be detected as containing the changed element and processed
       const group = svgTree.children[0];
