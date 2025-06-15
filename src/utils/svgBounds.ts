@@ -22,7 +22,7 @@ async function calculateElementBoundsWithFabric(
   svgString: string,
   targetElement: SVGElementNode,
 ): Promise<ElementBounds> {
-  const elementId = targetElement?.attributes.id;
+  const elementId = targetElement?.id;
 
   // Require ID for fabric.js bounds calculation
   if (!elementId) {
@@ -51,8 +51,10 @@ async function calculateElementBoundsWithFabric(
     };
   }
 
-  // If element with ID not found, return zero bounds
-  return { x: 0, y: 0, width: 0, height: 0 };
+  // If element with ID not found, throw an error for debugging
+  throw new Error(
+    `Element with ID "${elementId}" not found in fabric.js SVG parsing. Check if the element exists in the SVG string.`
+  );
 }
 
 /**
