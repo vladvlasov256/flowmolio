@@ -2,7 +2,7 @@ import { FabricObject, loadSVGFromString } from 'fabric';
 
 import { SVGElementNode } from '../types';
 
-import { serializeSVG } from './renderUtils';
+import { serializeSVG } from './svgUtils';
 import { extractLinesFromElement } from './textLayoutUtils';
 
 /**

@@ -1,7 +1,7 @@
 import { Layout, DataSources } from '../types';
 
-import { applyDataBindings, serializeSVG } from './renderUtils';
-import { parseSVG } from './svgUtils';
+import { applyDataBindings } from './renderUtils';
+import { parseSVG, serializeSVG } from './svgUtils';
 
 /**
  * Renders an SVG with data bindings applied

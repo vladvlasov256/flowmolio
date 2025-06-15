@@ -19,15 +19,6 @@ import {
 } from './textLayoutUtils';
 import { breakTextIntoLines, generateTspans, FontConfig } from './textUtils';
 
-/**
- * Escapes XML special characters using he library with numeric entities
- */
-function escapeXML(str: string): string {
-  return encode(str, {
-    useNamedReferences: false, // Forces numeric references
-    decimal: true, // Use decimal (&#38;) instead of hex (&#x26;)
-  });
-}
 
 /**
  * Extracts a value from a nested object using a dot-notation path
@@ -198,7 +189,10 @@ async function applyTextDataBindings({
         targetElement.innerHTML = tempDiv.innerHTML;
       } else {
         // No tspans found, just replace the entire innerHTML
-        targetElement.innerHTML = escapeXML(dataString);
+        targetElement.innerHTML = encode(dataString, {
+          useNamedReferences: false,
+          decimal: true,
+        });
       }
     }
 
@@ -344,49 +338,3 @@ export async function applyDataBindings(context: DataBindingContext): Promise<vo
   applyColorDataBindings(context);
 }
 
-/**
- * Serializes an SVG element tree back to string format
- */
-export function serializeSVG(svgTree: SVGElementNode): string {
-  // Create a simple SVG serialization
-  let attributes = Object.entries(svgTree.attributes)
-    .filter(([key]) => key !== 'id') // Remove id from attributes since we'll handle it separately
-    .map(([key, value]) => `${key}="${escapeXML(value)}"`)
-    .join(' ');
-
-  // Include the id if it exists (either original or generated)
-  if (svgTree.id) {
-    const idAttr = `id="${escapeXML(svgTree.id)}"`;
-    attributes = attributes ? `${idAttr} ${attributes}` : idAttr;
-  }
-
-  let result = `<${svgTree.tagName} ${attributes}`;
-
-  if (svgTree.children.length === 0 && !svgTree.textContent && !svgTree.innerHTML) {
-    // Self-closing tag
-    return `${result} />`;
-  }
-
-  result += '>';
-
-  // For text elements, use innerHTML to preserve tspan elements
-  if (svgTree.isText && svgTree.innerHTML) {
-    result += svgTree.innerHTML;
-  }
-  // Add text content if it exists and there's no innerHTML
-  else if (svgTree.textContent) {
-    result += escapeXML(svgTree.textContent);
-  }
-
-  // Add children recursively (for non-text elements, or text elements without innerHTML)
-  if (!svgTree.isText || !svgTree.innerHTML) {
-    svgTree.children.forEach(child => {
-      result += serializeSVG(child);
-    });
-  }
-
-  // Close tag
-  result += `</${svgTree.tagName}>`;
-
-  return result;
-}

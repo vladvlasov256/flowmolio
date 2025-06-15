@@ -1,3 +1,4 @@
+import { encode } from 'he';
 import parse, { type HTMLElement } from 'node-html-parser';
 
 import { SVGElementNode } from '../types';
@@ -114,4 +115,61 @@ export function findElementById(tree: SVGElementNode, id: string): SVGElementNod
   }
 
   return null;
+}
+
+/**
+ * Escapes XML special characters for safe inclusion in XML/SVG
+ */
+function escapeXML(str: string): string {
+  return encode(str, {
+    useNamedReferences: false, // Forces numeric references
+    decimal: true, // Use decimal (&#38;) instead of hex (&#x26;)
+  });
+}
+
+/**
+ * Serializes an SVG element tree back to string format
+ */
+export function serializeSVG(svgTree: SVGElementNode): string {
+  // Create a simple SVG serialization
+  let attributes = Object.entries(svgTree.attributes)
+    .filter(([key]) => key !== 'id') // Remove id from attributes since we'll handle it separately
+    .map(([key, value]) => `${key}="${escapeXML(value)}"`)
+    .join(' ');
+
+  // Include the id if it exists (either original or generated)
+  if (svgTree.id) {
+    const idAttr = `id="${escapeXML(svgTree.id)}"`;
+    attributes = attributes ? `${idAttr} ${attributes}` : idAttr;
+  }
+
+  let result = `<${svgTree.tagName} ${attributes}`;
+
+  if (svgTree.children.length === 0 && !svgTree.textContent && !svgTree.innerHTML) {
+    // Self-closing tag
+    return `${result} />`;
+  }
+
+  result += '>';
+
+  // For text elements, use innerHTML to preserve tspan elements
+  if (svgTree.isText && svgTree.innerHTML) {
+    result += svgTree.innerHTML;
+  }
+  // Add text content if it exists and there's no innerHTML
+  else if (svgTree.textContent) {
+    result += escapeXML(svgTree.textContent);
+  }
+
+  // Add children recursively (for non-text elements, or text elements without innerHTML)
+  if (!svgTree.isText || !svgTree.innerHTML) {
+    svgTree.children.forEach(child => {
+      result += serializeSVG(child);
+    });
+  }
+
+  // Close tag
+  result += `</${svgTree.tagName}>`;
+
+  return result;
 }
