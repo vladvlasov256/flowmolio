@@ -14,7 +14,9 @@ describe('convertBlueprintToLayout', () => {
           renderingStrategy: {
             width: {
               type: 'natural'
-            }
+            },
+            horizontalAlignment: 'left',
+            offset: 0
           }
         }
       },
@@ -100,7 +102,9 @@ describe('convertBlueprintToLayout', () => {
         renderingStrategy: {
           width: {
             type: 'natural'
-          }
+          },
+          horizontalAlignment: 'left',
+          offset: 0
         }
       },
       {
@@ -141,7 +145,9 @@ describe('convertBlueprintToLayout', () => {
             renderingStrategy: {
               width: {
                 type: 'natural'
-              }
+              },
+              horizontalAlignment: 'left',
+              offset: 0
             }
           }
         },
@@ -165,7 +171,9 @@ describe('convertBlueprintToLayout', () => {
       renderingStrategy: {
         width: {
           type: 'natural'
-        }
+        },
+        horizontalAlignment: 'left',
+        offset: 0
       }
     });
   });
@@ -183,7 +191,9 @@ describe('convertBlueprintToLayout', () => {
             renderingStrategy: {
               width: {
                 type: 'natural'
-              }
+              },
+              horizontalAlignment: 'left',
+              offset: 0
             }
           }
         }
@@ -262,7 +272,9 @@ describe('convertBlueprintToLayout', () => {
               width: {
                 type: 'constrained',
                 value: 200
-              }
+              },
+              horizontalAlignment: 'left',
+              offset: 0
             }
           }
         }
@@ -281,7 +293,9 @@ describe('convertBlueprintToLayout', () => {
         width: {
           type: 'constrained',
           value: 200
-        }
+        },
+        horizontalAlignment: 'left',
+        offset: 0
       }
     });
   });
@@ -299,7 +313,9 @@ describe('convertBlueprintToLayout', () => {
             renderingStrategy: {
               width: {
                 type: 'natural'
-              }
+              },
+              horizontalAlignment: 'left',
+              offset: 0
             }
           }
         }
@@ -317,7 +333,9 @@ describe('convertBlueprintToLayout', () => {
       renderingStrategy: {
         width: {
           type: 'natural'
-        }
+        },
+        horizontalAlignment: 'left',
+        offset: 0
       }
     });
   });
