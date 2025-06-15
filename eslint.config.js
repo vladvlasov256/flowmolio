@@ -32,6 +32,8 @@ export default [
         document: 'readonly',
         window: 'readonly',
         React: 'readonly',
+        console: 'readonly',
+        global: 'readonly',
         ...jestPlugin.environments.globals.globals,
       },
     },

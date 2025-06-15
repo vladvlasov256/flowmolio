@@ -1,4 +1,6 @@
-import { Layout, Connection, Component, DataSources } from '../../src/types';
+import { performance } from 'perf_hooks';
+
+import { Layout, DataSources } from '../../src/types';
 import { renderFlowMolio } from '../../src/utils/renderFlowMolio';
 
 describe('renderFlowMolio Performance Tests', () => {

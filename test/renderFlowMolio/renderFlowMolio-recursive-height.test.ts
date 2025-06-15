@@ -362,6 +362,94 @@ describe('Recursive Height Update System', () => {
       const unusedClipHeight = parseFloat(unusedClipMatch![1]);
       expect(unusedClipHeight).toBe(500); // Should remain unchanged
     });
+
+    it('should update all backgrounds that contain text using precise containment logic (not just full-height heuristic)', async () => {
+      const svgWithHalfHeightBackground = `
+        <svg width="400" height="600" viewBox="0 0 400 600">
+          <defs>
+            <clipPath id="halfClip">
+              <rect id="half-clip-rect" x="0" y="150" width="400" height="300" fill="white"/>
+            </clipPath>
+          </defs>
+          
+          <!-- Container group for the half-height section -->
+          <g id="half-section">
+            <!-- Half-height background (should be updated - contains the text) -->
+            <rect id="half-background" x="0" y="150" width="400" height="300" fill="#ffffff"/>
+            
+            <!-- Text positioned within the half-height background -->
+            <g clip-path="url(#halfClip)">
+              <text id="contained-text" x="20" y="300" font-family="Arial" font-size="16" fill="#333">
+                <tspan x="20" dy="0">This text is within the half-height background</tspan>
+              </text>
+            </g>
+          </g>
+          
+          <!-- Full background (should NOT be updated - text is not here) -->
+          <rect id="full-background" x="0" y="0" width="400" height="600" fill="#f0f0f0"/>
+          
+          <!-- Another small background outside the half area (should NOT be updated) -->
+          <rect id="small-background" x="50" y="50" width="100" height="50" fill="#e0e0e0"/>
+        </svg>
+      `;
+
+      const textComponent: Component = {
+        id: 'textComp',
+        type: 'text',
+        elementId: 'contained-text',
+        renderingStrategy: {
+          width: { type: 'constrained', value: 360 }
+        }
+      };
+
+      const connection: Connection = {
+        sourceNodeId: 'content',
+        sourceField: 'description',
+        targetNodeId: 'textComp',
+      };
+
+      const layout: Layout = {
+        svg: svgWithHalfHeightBackground,
+        connections: [connection],
+        components: [textComponent],
+      };
+
+      const dataSources: DataSources = {
+        content: { 
+          description: 'This is a very long text that will expand significantly beyond the original text bounds, causing the half-height background and its clipPath to expand while leaving the full-height background and small background unchanged because they do not contain the text element according to precise containment logic.'
+        },
+      };
+
+      const result = await renderFlowMolio(layout, dataSources);
+
+      // Debug: Log the result to see what's happening
+      console.log('Rendered SVG:', result);
+
+      // Half-height background should be updated (contains the text at y=300)
+      const halfBgMatch = result.match(/<rect[^>]*id="half-background"[^>]*height="([^"]*)"/);
+      expect(halfBgMatch).toBeTruthy();
+      const halfBgHeight = parseFloat(halfBgMatch![1]);
+      console.log('Half background height:', halfBgHeight);
+      expect(halfBgHeight).toBeGreaterThan(300); // Should have expanded
+
+      // Half-height clipPath should also be updated
+      const halfClipMatch = result.match(/<clippath[^>]*id="halfClip"[^>]*>[\s\S]*?<rect[^>]*height="([^"]*)"/);
+      expect(halfClipMatch).toBeTruthy();
+      const halfClipHeight = parseFloat(halfClipMatch![1]);
+      expect(halfClipHeight).toBeGreaterThan(300); // Should have expanded
+
+      // Full background SHOULD also be updated (text at y=300 overlaps with y=0-600)
+      const fullBgMatch = result.match(/<rect[^>]*id="full-background"[^>]*height="([^"]*)"/);
+      expect(fullBgMatch).toBeTruthy();
+      const fullBgHeight = parseFloat(fullBgMatch![1]);
+      expect(fullBgHeight).toBeGreaterThan(600); // Should have expanded
+
+      // Small background should NOT be updated (doesn't contain the text at y=300)
+      const smallBgMatch = result.match(/<rect[^>]*id="small-background"[^>]*height="([^"]*)"/);
+      expect(smallBgMatch).toBeTruthy();
+      const smallBgHeight = parseFloat(smallBgMatch![1]);
+      expect(smallBgHeight).toBe(50); // Should remain unchanged
+    });
   });
 
   describe('Tricky Nested Structure', () => {
