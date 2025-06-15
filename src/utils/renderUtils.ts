@@ -10,7 +10,7 @@ import {
   ColorRole,
 } from '../types';
 
-import { handleTextHeightChange } from './svgBounds';
+import { handleTextHeightChange, calculateTextBoundsSync } from './svgBounds';
 import { findElementById } from './svgUtils';
 import {
   calculateTextElementHeight,
@@ -98,9 +98,10 @@ async function applyTextDataBindings({
         const renderingStrategy = textComponent.renderingStrategy;
 
         if (renderingStrategy?.width.type === 'constrained') {
-          // Calculate original height before modification
+          // Calculate original height and bounds before modification
           const { height: originalHeight, lineHeight: oldLineHeight } =
             calculateTextElementHeight(targetElement);
+          const originalBounds = calculateTextBoundsSync(targetElement);
 
           // For constrained width, break text into lines and generate tspans
           const firstTspan = tspans[0];
@@ -182,7 +183,7 @@ async function applyTextDataBindings({
           // If height changed, shift elements below and update container hierarchy
           if (heightDelta !== 0) {
             shiftElementsBelow(svgTree, y, heightDelta);
-            await handleTextHeightChange(svgTree, targetElement, heightDelta);
+            await handleTextHeightChange(svgTree, targetElement, heightDelta, originalBounds);
           }
         } else {
           // Natural strategy - use existing behavior

@@ -514,11 +514,8 @@ export async function handleTextHeightChange(
   svgTree: SVGElementNode,
   textElement: SVGElementNode,
   deltaHeight: number,
+  originalBounds: ElementBounds,
 ): Promise<void> {
-  // Capture the original bounds of the text element before any modifications
-  // Use sync version for text bounds since we need immediate calculation for layout
-  const originalBounds = calculateTextBoundsSync(textElement);
-  
   // For very small text elements, use expanded bounds for containment detection
   // This ensures backgrounds get updated even for single-line text that expands
   const boundsForContainment = originalBounds.height < 5 
