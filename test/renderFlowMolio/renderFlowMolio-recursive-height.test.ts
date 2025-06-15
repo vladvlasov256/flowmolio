@@ -379,8 +379,8 @@ describe('Recursive Height Update System', () => {
             
             <!-- Text positioned within the half-height background -->
             <g clip-path="url(#halfClip)">
-              <text id="contained-text" x="20" y="300" font-family="Arial" font-size="16" fill="#333">
-                <tspan x="20" dy="0">This text is within the half-height background</tspan>
+              <text id="contained-text" font-family="Arial" font-size="16" fill="#333">
+                <tspan x="20" y="300">This text is within the half-height background</tspan>
               </text>
             </g>
           </g>
