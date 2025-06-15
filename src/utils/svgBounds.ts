@@ -272,11 +272,18 @@ export async function updateContainingSiblings(
   changedElementBounds: ElementBounds,
   deltaHeight: number,
   svgRoot: SVGElementNode,
+  processedElements: Set<SVGElementNode> = new Set(),
 ): Promise<void> {
   // First pass: try to find elements that contain the changed element
   const elementsToUpdate: SVGElementNode[] = [];
 
   for (const child of containerElement.children) {
+    // Skip if this child has already been processed
+    // This prevents double-processing when recursively traversing up the hierarchy
+    if (processedElements.has(child)) {
+      continue;
+    }
+    
     if (await containsChangedElement(child, changedElementBounds, svgRoot)) {
       elementsToUpdate.push(child);
     }
@@ -287,6 +294,9 @@ export async function updateContainingSiblings(
 
   // Update all identified elements
   for (const child of elementsToUpdate) {
+    // Mark this element as processed
+    processedElements.add(child);
+    
     // Update the element's height based on its type
     switch (child.tagName.toLowerCase()) {
       case 'rect': {
@@ -318,7 +328,8 @@ export async function updateContainingSiblings(
 
       case 'g': {
         // For groups, recursively update their containing children
-        await updateContainingSiblings(child, changedElementBounds, deltaHeight, svgRoot);
+        // passing the processedElements set to avoid duplicate processing
+        await updateContainingSiblings(child, changedElementBounds, deltaHeight, svgRoot, processedElements);
         break;
       }
 
@@ -450,46 +461,55 @@ export async function updateElementAndAncestors(
 ): Promise<void> {
   if (deltaHeight === 0) return;
 
-  // Find the parent of the changed element
-  const parentElement = findParentElement(svgTree, changedElement);
-  if (!parentElement) {
-    // This shouldn't happen unless changedElement is not in the tree
-    return;
-  }
+  // Create a set to track processed elements and prevent double-processing
+  const processedElements = new Set<SVGElementNode>();
+  
+  // Add the changed element to processed set since it's the source of the change
+  // and should never be processed by updateContainingSiblings
+  processedElements.add(changedElement);
 
-  // Update siblings that contain the changed element (using original bounds)
-  await updateContainingSiblings(parentElement, changedElementOriginalBounds, deltaHeight, svgTree);
-
-  // If parent is the SVG root, also update SVG dimensions
-  if (parentElement.tagName === 'svg') {
-    // Update SVG height
-    if (parentElement.attributes.height) {
-      const currentHeight = parseFloat(parentElement.attributes.height);
-      const newHeight = Math.max(0, currentHeight + deltaHeight);
-      parentElement.attributes.height = String(newHeight);
+  // Traverse up the hierarchy from the changed element to the root
+  let currentElement = changedElement;
+  
+  while (currentElement) {
+    // Find the parent of the current element
+    const parentElement = findParentElement(svgTree, currentElement);
+    if (!parentElement) {
+      // Reached the top or element not in tree
+      break;
     }
 
-    // Update viewBox
-    if (parentElement.attributes.viewBox) {
-      const viewBoxParts = parentElement.attributes.viewBox.split(/\s+/);
-      if (viewBoxParts.length === 4) {
-        const [minX, minY, width, height] = viewBoxParts.map(parseFloat);
-        const newHeight = Math.max(0, height + deltaHeight);
-        parentElement.attributes.viewBox = `${minX} ${minY} ${width} ${newHeight}`;
+    // Add current element to processed set
+    processedElements.add(currentElement);
+
+    // Update siblings that contain the changed element (using original bounds)
+    await updateContainingSiblings(parentElement, changedElementOriginalBounds, deltaHeight, svgTree, processedElements);
+
+    // If parent is the SVG root, also update SVG dimensions
+    if (parentElement.tagName === 'svg') {
+      // Update SVG height
+      if (parentElement.attributes.height) {
+        const currentHeight = parseFloat(parentElement.attributes.height);
+        const newHeight = Math.max(0, currentHeight + deltaHeight);
+        parentElement.attributes.height = String(newHeight);
       }
+
+      // Update viewBox
+      if (parentElement.attributes.viewBox) {
+        const viewBoxParts = parentElement.attributes.viewBox.split(/\s+/);
+        if (viewBoxParts.length === 4) {
+          const [minX, minY, width, height] = viewBoxParts.map(parseFloat);
+          const newHeight = Math.max(0, height + deltaHeight);
+          parentElement.attributes.viewBox = `${minX} ${minY} ${width} ${newHeight}`;
+        }
+      }
+
+      break; // Reached the root
     }
 
-    return;
+    // Move up to the parent for the next iteration
+    currentElement = parentElement;
   }
-
-  // Recursively update ancestors with the same deltaHeight
-  // For containers and background elements, the full deltaHeight should propagate
-  await updateElementAndAncestors(
-    svgTree,
-    parentElement,
-    changedElementOriginalBounds,
-    deltaHeight,
-  );
 }
 
 /**
