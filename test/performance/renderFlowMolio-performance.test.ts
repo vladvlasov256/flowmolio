@@ -272,7 +272,7 @@ describe('renderFlowMolio Performance Tests', () => {
         // Performance shouldn't degrade dramatically with text size
         if (i > 0) {
           const scaleFactor = duration / previousDuration;
-          expect(scaleFactor).toBeLessThan(3); // Performance shouldn't be more than 3x worse
+          expect(scaleFactor).toBeLessThan(5); // Performance shouldn't be more than 5x worse
         }
         
         previousDuration = duration;

@@ -79,7 +79,7 @@ export function calculateTextElementHeight(
   }
 
   // Single line has no additional height
-  if (lines.length === 1) return { height: oldLineHeight, lineHeight: estimatedLineHeight }
+  if (lines.length === 1) return { height: estimatedLineHeight, lineHeight: estimatedLineHeight }
 
   // Height is the difference between first and last line plus one line height
   const minY = lines[0].y // lines are sorted, so first is minimum

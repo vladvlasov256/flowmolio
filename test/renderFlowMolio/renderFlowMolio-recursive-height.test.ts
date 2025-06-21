@@ -640,7 +640,7 @@ describe('Recursive Height Update System', () => {
       const mainBgMatch = result.match(/<rect[^>]*id="main-background"[^>]*height="([^"]*)"/);
       expect(mainBgMatch).toBeTruthy();
       const mainBgHeight = parseFloat(mainBgMatch![1]);
-      expect(mainBgHeight).toBeCloseTo(758.4); // Should have expanded
+      expect(mainBgHeight).toBeCloseTo(744); // Should have expanded
 
       // Filter width should be updated to constrained width (150)
       const filterMatch = result.match(/<filter[^>]*id="filter8_d_210_520"[^>]*width="([^"]*)"/);
@@ -652,7 +652,7 @@ describe('Recursive Height Update System', () => {
       const filterHeightMatch = result.match(/<filter[^>]*id="filter8_d_210_520"[^>]*height="([^"]*)"/);
       expect(filterHeightMatch).toBeTruthy();
       const filterHeight = parseFloat(filterHeightMatch![1]);
-      expect(filterHeight).toBeGreaterThan(175.3);
+      expect(filterHeight).toBeGreaterThan(160.9);
 
       // Verify text expanded
       const tspanCount = (result.match(/<tspan/g) || []).length;
