@@ -214,6 +214,42 @@ export function calculateTextBoundsSync(element: SVGElementNode): ElementBounds 
 }
 
 /**
+ * Checks if elementBounds contains changedElementBounds using overlap logic
+ * 
+ * An element "contains" the changed element if their bounds intersect
+ * for at least 90% of the changed element's height.
+ */
+function checkBoundsContainment(
+  elementBounds: ElementBounds,
+  changedElementBounds: ElementBounds,
+): boolean {
+  // Calculate vertical overlap between the two elements
+  const overlapTop = Math.max(elementBounds.y, changedElementBounds.y)
+  const overlapBottom = Math.min(
+    elementBounds.y + elementBounds.height,
+    changedElementBounds.y + changedElementBounds.height,
+  )
+
+  // If there's no overlap, return false
+  if (overlapTop >= overlapBottom) {
+    return false
+  }
+
+  const overlapHeight = overlapBottom - overlapTop
+  const changedElementHeight = changedElementBounds.height
+
+  // Element contains the changed element if there's meaningful overlap
+  // For very small elements, any overlap counts
+  // For larger elements, require at least 90% overlap
+  if (changedElementHeight < 5) {
+    return overlapHeight > 0
+  }
+
+  const overlapRatio = overlapHeight / changedElementHeight
+  return overlapRatio >= 0.9
+}
+
+/**
  * Checks if an element contains (overlaps with) the changed element
  *
  * An element "contains" the changed element if their bounds intersect
@@ -258,31 +294,7 @@ export function containsChangedElement(
 
   try {
     const elementBounds = calculateElementBoundsFromFabricObjects(fabricObjectsById, element)
-
-    // Calculate vertical overlap between the two elements
-    const overlapTop = Math.max(elementBounds.y, changedElementBounds.y)
-    const overlapBottom = Math.min(
-      elementBounds.y + elementBounds.height,
-      changedElementBounds.y + changedElementBounds.height,
-    )
-
-    // If there's no overlap, return false
-    if (overlapTop >= overlapBottom) {
-      return false
-    }
-
-    const overlapHeight = overlapBottom - overlapTop
-    const changedElementHeight = changedElementBounds.height
-
-    // Element contains the changed element if there's meaningful overlap
-    // For very small elements, any overlap counts
-    // For larger elements, require at least 90% overlap
-    if (changedElementHeight < 5) {
-      return overlapHeight > 0
-    }
-
-    const overlapRatio = overlapHeight / changedElementHeight
-    return overlapRatio >= 0.9
+    return checkBoundsContainment(elementBounds, changedElementBounds)
   } catch {
     // If bounds calculation fails, assume no containment
     return false
@@ -424,7 +436,7 @@ async function updateReferencedClipPaths(
   const defsElement = findDefs(svgTree)
   if (!defsElement) return
 
-  // Update only the referenced clipPaths
+  // Check each referenced clipPath to see if it contains the changed element
   for (const child of defsElement.children) {
     if (child.tagName.toLowerCase() === 'clippath') {
       const clipPathId = child.attributes.id
@@ -432,15 +444,22 @@ async function updateReferencedClipPaths(
         // Check for rect children in this specific clipPath
         for (const clipChild of child.children) {
           if (clipChild.tagName.toLowerCase() === 'rect') {
-            // Simple attribute comparison - if clipPath height >= original bounds height, expand it
+            // Check if the clipPath rect contains the changed element
+            const clipRectX = parseFloat(clipChild.attributes.x || '0')
             const clipRectY = parseFloat(clipChild.attributes.y || '0')
+            const clipRectWidth = parseFloat(clipChild.attributes.width || '0')
             const clipRectHeight = parseFloat(clipChild.attributes.height || '0')
-            const clipBottom = clipRectY + clipRectHeight
-            const changedBottom = changedElementBounds.y + changedElementBounds.height
 
-            // If the clipPath rect extends at least as far down as the original changed element bounds,
-            // then it should be expanded to accommodate the new height
-            if (clipBottom >= changedBottom) {
+            const clipRectBounds: ElementBounds = {
+              x: clipRectX,
+              y: clipRectY,
+              width: clipRectWidth,
+              height: clipRectHeight,
+            }
+
+            // Use the same containment logic as other elements
+            if (checkBoundsContainment(clipRectBounds, changedElementBounds)) {
+              // Expand the clipPath rect to accommodate the new height
               const currentHeight = parseFloat(clipChild.attributes.height || '0')
               const newHeight = Math.max(0, currentHeight + deltaHeight)
               clipChild.attributes.height = String(newHeight)

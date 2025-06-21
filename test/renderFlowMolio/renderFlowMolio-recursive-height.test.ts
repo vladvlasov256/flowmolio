@@ -474,6 +474,108 @@ describe('Recursive Height Update System', () => {
       const smallBgHeight = parseFloat(smallBgMatch![1]);
       expect(smallBgHeight).toBe(50); // Should remain unchanged
     });
+
+    it('should not expand clipPaths for small images positioned below the text', async () => {
+      const svgWithSmallImageBelow = `
+        <svg width="400" height="600" viewBox="0 0 400 600">
+          <defs>
+            <clipPath id="textContainerClip">
+              <rect id="text-container-clip-rect" x="0" y="0" width="400" height="300" fill="white"/>
+            </clipPath>
+            <clipPath id="smallImageClip">
+              <rect id="small-image-clip-rect" x="50" y="450" width="100" height="80" fill="white"/>
+            </clipPath>
+          </defs>
+          
+          <!-- Main background that contains the text -->
+          <rect id="main-background" x="0" y="0" width="400" height="600" fill="#f0f0f0"/>
+          
+          <!-- Container for text with clipPath -->
+          <g clip-path="url(#textContainerClip)">
+            <rect id="text-background" x="0" y="0" width="400" height="300" fill="#ffffff"/>
+            <text id="expanding-text" font-family="Arial" font-size="16" fill="#333">
+              <tspan x="20" y="150">This text will expand and should update text container</tspan>
+            </text>
+          </g>
+          
+          <!-- Small image positioned below the text with its own clipPath -->
+          <g clip-path="url(#smallImageClip)">
+            <rect id="small-image" x="50" y="450" width="100" height="80" fill="#ffcc00"/>
+          </g>
+        </svg>
+      `;
+
+      const textComponent: Component = {
+        id: 'textComp',
+        type: 'text',
+        elementId: 'expanding-text',
+        renderingStrategy: {
+          width: { type: 'constrained', value: 350 },
+          horizontalAlignment: 'left',
+          offset: 20
+        }
+      };
+
+      const connection: Connection = {
+        sourceNodeId: 'content',
+        sourceField: 'description',
+        targetNodeId: 'textComp',
+      };
+
+      const layout: Layout = {
+        svg: svgWithSmallImageBelow,
+        connections: [connection],
+        components: [textComponent],
+      };
+
+      const dataSources: DataSources = {
+        content: { 
+          description: 'This is a very long text that will expand significantly beyond the original text bounds, causing the text container background and its clipPath to expand, but should leave the small image clipPath below unchanged because the image does not contain the text element.'
+        },
+      };
+
+      const result = await renderFlowMolio(layout, dataSources);
+
+      // Main background should be updated (contains the text at y=150)
+      const mainBgMatch = result.match(/<rect[^>]*id="main-background"[^>]*height="([^"]*)"/);
+      expect(mainBgMatch).toBeTruthy();
+      const mainBgHeight = parseFloat(mainBgMatch![1]);
+      expect(mainBgHeight).toBeGreaterThan(600); // Should have expanded
+
+      // Text background should be updated (contains the text)
+      const textBgMatch = result.match(/<rect[^>]*id="text-background"[^>]*height="([^"]*)"/);
+      expect(textBgMatch).toBeTruthy();
+      const textBgHeight = parseFloat(textBgMatch![1]);
+      expect(textBgHeight).toBeGreaterThan(300); // Should have expanded
+
+      // Text container clipPath should be updated (contains the text)
+      const textClipMatch = result.match(/<clippath[^>]*id="textContainerClip"[^>]*>[\\s\\S]*?<rect[^>]*height="([^"]*)"/);
+      expect(textClipMatch).toBeTruthy();
+      const textClipHeight = parseFloat(textClipMatch![1]);
+      expect(textClipHeight).toBeGreaterThan(300); // Should have expanded
+
+      // Small image should NOT be updated (doesn't contain the text)
+      const smallImageMatch = result.match(/<rect[^>]*id="small-image"[^>]*height="([^"]*)"/);
+      expect(smallImageMatch).toBeTruthy();
+      const smallImageHeight = parseFloat(smallImageMatch![1]);
+      expect(smallImageHeight).toBe(80); // Should remain unchanged
+
+      // Small image clipPath should NOT be updated (doesn't contain the text)
+      const smallImageClipMatch = result.match(/<clippath[^>]*id="smallImageClip"[^>]*>[\\s\\S]*?<rect[^>]*height="([^"]*)"/);
+      expect(smallImageClipMatch).toBeTruthy();
+      const smallImageClipHeight = parseFloat(smallImageClipMatch![1]);
+      expect(smallImageClipHeight).toBe(80); // Should remain unchanged
+
+      // Verify text expanded
+      const tspanCount = (result.match(/<tspan/g) || []).length;
+      expect(tspanCount).toBeGreaterThan(1);
+
+      // Verify SVG height was updated
+      const svgHeightMatch = result.match(/<svg[^>]*height="([^"]*)"/);
+      expect(svgHeightMatch).toBeTruthy();
+      const svgHeight = parseFloat(svgHeightMatch![1]);
+      expect(svgHeight).toBeGreaterThan(600);
+    });
   });
 
   describe('Tricky Nested Structure', () => {
