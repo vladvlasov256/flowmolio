@@ -25,6 +25,20 @@ interface FlowMolioPreviewWithBlueprintProps extends BaseFlowMolioPreviewProps {
 // Union type for the final props
 type FlowMolioPreviewProps = FlowMolioPreviewWithLayoutProps | FlowMolioPreviewWithBlueprintProps
 
+const convertSvgAttributesToReactProps = (attributes: Record<string, string>): Record<string, string> => {
+  const props: Record<string, string> = {}
+  Object.entries(attributes).forEach(([key, value]) => {
+    let reactKey = key
+    if (key === 'class') {
+      reactKey = 'className'
+    } else if (key === 'xmlns:xlink') {
+      reactKey = 'xmlnsXlink'
+    }
+    props[reactKey] = value
+  })
+  return props
+}
+
 export const FlowMolioPreview: React.FC<FlowMolioPreviewProps> = ({
   layout,
   blueprint,
@@ -116,10 +130,7 @@ export const FlowMolioPreview: React.FC<FlowMolioPreviewProps> = ({
       return null
     }
 
-    const props: Record<string, string> = {}
-    Object.entries(svgElement.attributes).forEach(([key, value]) => {
-      props[key === 'class' ? 'className' : key] = value
-    })
+    const props = convertSvgAttributesToReactProps(svgElement.attributes)
 
     return {
       props,
@@ -142,10 +153,7 @@ export const FlowMolioPreview: React.FC<FlowMolioPreviewProps> = ({
       return null
     }
 
-    const props: Record<string, string> = {}
-    Object.entries(svgElement.attributes).forEach(([key, value]) => {
-      props[key === 'class' ? 'className' : key] = value
-    })
+    const props = convertSvgAttributesToReactProps(svgElement.attributes)
 
     return (
       <svg dangerouslySetInnerHTML={{ __html: svgElement.innerHTML }} {...props} {...svgProps} />
