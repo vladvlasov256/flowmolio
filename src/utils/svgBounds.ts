@@ -483,25 +483,71 @@ async function updateReferencedClipPaths(
 }
 
 /**
- * Updates specific filter dimensions that are referenced by text-only groups
- * This handles Figma-style text effects where filters need to match text bounds
+ * Finds the defs element in the SVG tree
  */
-async function updateReferencedTextFilters(
-  svgTree: SVGElementNode,
-  containerElement: SVGElementNode,
-  changedElementBounds: ElementBounds,
-  deltaHeight: number,
-  constrainedWidth?: number,
-  changedElement?: SVGElementNode,
-): Promise<void> {
-  // Find all filter references in text-only groups
-  const filterUpdates: Array<{
-    filterId: string
-    newWidth?: number
-    shouldUpdateHeight: boolean
-  }> = []
+function findDefs(element: SVGElementNode): SVGElementNode | null {
+  for (const child of element.children) {
+    if (child.tagName.toLowerCase() === 'defs') {
+      return child
+    }
+    const found = findDefs(child)
+    if (found) return found
+  }
+  return null
+}
 
-  function collectTextFilterReferences(element: SVGElementNode): void {
+/**
+ * Collects filter references for text-only groups containing a specific text element
+ */
+function collectTextFilterReferencesForElement(
+  rootElement: SVGElementNode,
+  targetTextElement: SVGElementNode,
+): string[] {
+  const filterIds: string[] = []
+
+  function traverse(element: SVGElementNode): void {
+    // Check if this is a group with a filter
+    if (element.tagName.toLowerCase() === 'g' && element.attributes.filter) {
+      // Extract filter ID from url(#filterId) format
+      const filterMatch = element.attributes.filter.match(/url\(#([^)]+)\)/)
+      if (filterMatch) {
+        const filterId = filterMatch[1]
+        
+        // Check if this group contains only one text element (and maybe other non-visual elements)
+        const visualChildren = element.children.filter(child => {
+          const tag = child.tagName.toLowerCase()
+          return !['defs', 'style', 'title', 'desc', 'metadata'].includes(tag)
+        })
+        
+        if (visualChildren.length === 1 && visualChildren[0].tagName.toLowerCase() === 'text') {
+          const groupTextElement = visualChildren[0]
+          
+          // Only collect filter if this text element is the one we're targeting
+          if (groupTextElement === targetTextElement) {
+            filterIds.push(filterId)
+          }
+        }
+      }
+    }
+
+    // Recursively check children
+    element.children.forEach(traverse)
+  }
+
+  traverse(rootElement)
+  return filterIds
+}
+
+/**
+ * Collects filter references for text-only groups containing a changed text element
+ */
+function collectTextFilterReferencesForChangedElement(
+  containerElement: SVGElementNode,
+  changedElement?: SVGElementNode,
+): string[] {
+  const filterIds: string[] = []
+
+  function traverse(element: SVGElementNode): void {
     // Check if this is a group with a filter
     if (element.tagName.toLowerCase() === 'g' && element.attributes.filter) {
       // Extract filter ID from url(#filterId) format
@@ -518,62 +564,78 @@ async function updateReferencedTextFilters(
         if (visualChildren.length === 1 && visualChildren[0].tagName.toLowerCase() === 'text') {
           const textElement = visualChildren[0]
           
-          // Only update filter if this text element is the one that actually changed
-          // This prevents filters from being affected by other text changes above them
+          // Only collect filter if this text element is the one that actually changed
           if (changedElement && textElement === changedElement) {
-            // Find the component for this text to check if it has constrained rendering
-            // For now, we'll use a heuristic: if text expanded significantly, it was constrained
-            const hasConstrainedWidth = deltaHeight > 0 // Text expanded, likely was constrained
-            
-            if (hasConstrainedWidth && constrainedWidth) {
-              filterUpdates.push({
-                filterId,
-                newWidth: constrainedWidth,
-                shouldUpdateHeight: true
-              })
-            }
+            filterIds.push(filterId)
           }
         }
       }
     }
 
     // Recursively check children
-    element.children.forEach(collectTextFilterReferences)
+    element.children.forEach(traverse)
   }
 
-  collectTextFilterReferences(containerElement)
+  traverse(containerElement)
+  return filterIds
+}
 
-  if (filterUpdates.length === 0) return
-
-  // Find the defs element in the SVG tree
-  function findDefs(element: SVGElementNode): SVGElementNode | null {
-    for (const child of element.children) {
-      if (child.tagName.toLowerCase() === 'defs') {
-        return child
-      }
-      const found = findDefs(child)
-      if (found) return found
-    }
-    return null
-  }
+/**
+ * Updates filter widths for constrained text elements
+ * This should be called whenever text has constrained width, regardless of height changes
+ */
+export async function updateFilterWidthsForConstrainedText(
+  svgTree: SVGElementNode,
+  textElement: SVGElementNode,
+  constrainedWidth: number,
+): Promise<void> {
+  const filterIds = collectTextFilterReferencesForElement(svgTree, textElement)
+  if (filterIds.length === 0) return
 
   const defsElement = findDefs(svgTree)
   if (!defsElement) return
 
-  // Update the filter dimensions
-  for (const update of filterUpdates) {
+  // Update the filter widths
+  for (const filterId of filterIds) {
     for (const child of defsElement.children) {
-      if (child.tagName.toLowerCase() === 'filter' && child.attributes.id === update.filterId) {
+      if (child.tagName.toLowerCase() === 'filter' && child.attributes.id === filterId) {
+        // Update filter width to match constrained text width
+        if (child.attributes.width) {
+          child.attributes.width = String(constrainedWidth)
+        }
+        break
+      }
+    }
+  }
+}
+
+/**
+ * Updates specific filter dimensions that are referenced by text-only groups
+ * This handles Figma-style text effects where filters need to match text bounds
+ */
+async function updateReferencedTextFilters(
+  svgTree: SVGElementNode,
+  containerElement: SVGElementNode,
+  changedElementBounds: ElementBounds,
+  deltaHeight: number,
+  constrainedWidth?: number,
+  changedElement?: SVGElementNode,
+): Promise<void> {
+  const filterIds = collectTextFilterReferencesForChangedElement(containerElement, changedElement)
+  if (filterIds.length === 0) return
+
+  const defsElement = findDefs(svgTree)
+  if (!defsElement) return
+
+  // Update the filter heights only (width is handled separately)
+  for (const filterId of filterIds) {
+    for (const child of defsElement.children) {
+      if (child.tagName.toLowerCase() === 'filter' && child.attributes.id === filterId) {
         // Update filter height (move it down and increase height)
-        if (update.shouldUpdateHeight && child.attributes.height) {
+        if (child.attributes.height) {
           const currentHeight = parseFloat(child.attributes.height)
           const newHeight = Math.max(0, currentHeight + deltaHeight)
           child.attributes.height = String(newHeight)
-        }
-
-        // Update filter width to match constrained text width
-        if (update.newWidth && child.attributes.width) {
-          child.attributes.width = String(update.newWidth)
         }
         
         // For filters, we typically don't move the y position since they're relative to the text

@@ -577,6 +577,82 @@ describe('Recursive Height Update System', () => {
       expect(svgHeight).toBeGreaterThan(600);
     });
 
+    it('should update filter width even for single-line constrained text', async () => {
+      const svgWithTextFilter = `
+        <svg width="400" height="600" viewBox="0 0 400 600">
+          <defs>
+            <filter id="filter_single_line" x="144.096" y="200" width="50" height="16.904" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+              <feflood flood-opacity="0" result="BackgroundImageFix"/>
+              <fecolormatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+              <feoffset dx="4" dy="4"/>
+              <fegaussianblur stdDeviation="2"/>
+              <fecomposite in2="hardAlpha" operator="out"/>
+              <fecolormatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.6 0"/>
+              <feblend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_210_520"/>
+              <feblend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_210_520" result="shape"/>
+            </filter>
+          </defs>
+          
+          <!-- Main background -->
+          <rect id="main-background" x="0" y="0" width="400" height="600" fill="#f0f0f0"/>
+          
+          <!-- Text with filter effect (single text in group) -->
+          <g id="single-line-group" filter="url(#filter_single_line)">
+            <text id="single-line-text" fill="#FDFDFD" font-family="Montserrat" font-size="12" font-weight="500">
+              <tspan x="144" y="208">Short</tspan>
+            </text>
+          </g>
+        </svg>
+      `;
+
+      const textComponent: Component = {
+        id: 'textComp',
+        type: 'text',
+        elementId: 'single-line-text',
+        renderingStrategy: {
+          width: { type: 'constrained', value: 200 },
+          horizontalAlignment: 'left',
+          offset: 20
+        }
+      };
+
+      const connection: Connection = {
+        sourceNodeId: 'content',
+        sourceField: 'text',
+        targetNodeId: 'textComp',
+      };
+
+      const layout: Layout = {
+        svg: svgWithTextFilter,
+        connections: [connection],
+        components: [textComponent],
+      };
+
+      const dataSources: DataSources = {
+        content: { 
+          text: 'Single line text' // This should remain single line but update filter width
+        },
+      };
+
+      const result = await renderFlowMolio(layout, dataSources);
+
+      // Filter width should be updated to constrained width (200) even though height doesn't change
+      const filterMatch = result.match(/<filter[^>]*id="filter_single_line"[^>]*width="([^"]*)"/);
+      expect(filterMatch).toBeTruthy();
+      const filterWidth = parseFloat(filterMatch![1]);
+      expect(filterWidth).toBe(200); // Should match constrained width
+
+      // Filter height should remain unchanged (no multi-line expansion)
+      const filterHeightMatch = result.match(/<filter[^>]*id="filter_single_line"[^>]*height="([^"]*)"/);
+      expect(filterHeightMatch).toBeTruthy();
+      const filterHeight = parseFloat(filterHeightMatch![1]);
+      expect(filterHeight).toBeCloseTo(16.904, 1); // Should remain close to original
+
+      // Text should remain single line
+      const tspanCount = (result.match(/<tspan/g) || []).length;
+      expect(tspanCount).toBe(1);
+    });
+
     it('should update filter dimensions for text-only groups with constrained text', async () => {
       const svgWithTextFilter = `
         <svg width="400" height="600" viewBox="0 0 400 600">

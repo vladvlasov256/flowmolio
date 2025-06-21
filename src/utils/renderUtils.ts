@@ -10,7 +10,7 @@ import {
   ColorRole,
 } from '../types'
 
-import { handleTextHeightChange, calculateTextBoundsSync } from './svgBounds'
+import { handleTextHeightChange, calculateTextBoundsSync, updateFilterWidthsForConstrainedText } from './svgBounds'
 import { findElementById } from './svgUtils'
 import {
   calculateTextElementHeight,
@@ -128,6 +128,9 @@ async function applyConstrainedTextRendering(
 
   // Update the innerHTML
   targetElement.innerHTML = tempDiv.innerHTML
+
+  // Always update filter widths for constrained text, regardless of height changes
+  await updateFilterWidthsForConstrainedText(svgTree, targetElement, widthValue)
 
   // Calculate new height and height delta
   const { height: newHeight } = calculateTextElementHeight(targetElement, oldLineHeight)
