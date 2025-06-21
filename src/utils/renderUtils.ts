@@ -136,7 +136,7 @@ async function applyConstrainedTextRendering(
   // If height changed, shift elements below and update container hierarchy
   if (heightDelta !== 0) {
     shiftElementsBelow(svgTree, y, heightDelta)
-    await handleTextHeightChange(svgTree, targetElement, heightDelta, originalBounds)
+    await handleTextHeightChange(svgTree, targetElement, heightDelta, originalBounds, widthValue)
   }
 }
 

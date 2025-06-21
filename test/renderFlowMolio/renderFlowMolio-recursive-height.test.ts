@@ -576,6 +576,94 @@ describe('Recursive Height Update System', () => {
       const svgHeight = parseFloat(svgHeightMatch![1]);
       expect(svgHeight).toBeGreaterThan(600);
     });
+
+    it('should update filter dimensions for text-only groups with constrained text', async () => {
+      const svgWithTextFilter = `
+        <svg width="400" height="600" viewBox="0 0 400 600">
+          <defs>
+            <filter id="filter8_d_210_520" x="144.096" y="200" width="21.4961" height="16.904" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+              <feflood flood-opacity="0" result="BackgroundImageFix"/>
+              <fecolormatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+              <feoffset dx="4" dy="4"/>
+              <fegaussianblur stdDeviation="2"/>
+              <fecomposite in2="hardAlpha" operator="out"/>
+              <fecolormatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.6 0"/>
+              <feblend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_210_520"/>
+              <feblend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_210_520" result="shape"/>
+            </filter>
+          </defs>
+          
+          <!-- Main background -->
+          <rect id="main-background" x="0" y="0" width="400" height="600" fill="#f0f0f0"/>
+          
+          <!-- Text with filter effect (single text in group) -->
+          <g id="1h" filter="url(#filter8_d_210_520)">
+            <text id="filtered-text" fill="#FDFDFD" font-family="Montserrat" font-size="12" font-weight="500">
+              <tspan x="144" y="208">47 min</tspan>
+            </text>
+          </g>
+        </svg>
+      `;
+
+      const textComponent: Component = {
+        id: 'textComp',
+        type: 'text',
+        elementId: 'filtered-text',
+        renderingStrategy: {
+          width: { type: 'constrained', value: 150 },
+          horizontalAlignment: 'left',
+          offset: 20
+        }
+      };
+
+      const connection: Connection = {
+        sourceNodeId: 'content',
+        sourceField: 'description',
+        targetNodeId: 'textComp',
+      };
+
+      const layout: Layout = {
+        svg: svgWithTextFilter,
+        connections: [connection],
+        components: [textComponent],
+      };
+
+      const dataSources: DataSources = {
+        content: { 
+          description: 'This is a much longer text that will expand significantly and should cause the filter width to be updated to match the constrained width of 150px, and the filter height should also be increased.'
+        },
+      };
+
+      const result = await renderFlowMolio(layout, dataSources);
+
+      // Main background should be updated (contains the text)
+      const mainBgMatch = result.match(/<rect[^>]*id="main-background"[^>]*height="([^"]*)"/);
+      expect(mainBgMatch).toBeTruthy();
+      const mainBgHeight = parseFloat(mainBgMatch![1]);
+      expect(mainBgHeight).toBeCloseTo(758.4); // Should have expanded
+
+      // Filter width should be updated to constrained width (150)
+      const filterMatch = result.match(/<filter[^>]*id="filter8_d_210_520"[^>]*width="([^"]*)"/);
+      expect(filterMatch).toBeTruthy();
+      const filterWidth = parseFloat(filterMatch![1]);
+      expect(filterWidth).toBe(150); // Should match constrained width
+
+      // Filter height should be updated (increased from original 16.904)
+      const filterHeightMatch = result.match(/<filter[^>]*id="filter8_d_210_520"[^>]*height="([^"]*)"/);
+      expect(filterHeightMatch).toBeTruthy();
+      const filterHeight = parseFloat(filterHeightMatch![1]);
+      expect(filterHeight).toBeGreaterThan(175.3);
+
+      // Verify text expanded
+      const tspanCount = (result.match(/<tspan/g) || []).length;
+      expect(tspanCount).toBeGreaterThan(1);
+
+      // Verify SVG height was updated
+      const svgHeightMatch = result.match(/<svg[^>]*height="([^"]*)"/);
+      expect(svgHeightMatch).toBeTruthy();
+      const svgHeight = parseFloat(svgHeightMatch![1]);
+      expect(svgHeight).toBeGreaterThan(600);
+    });
   });
 
   describe('Tricky Nested Structure', () => {

@@ -312,6 +312,8 @@ export async function updateContainingSiblings(
   svgRoot: SVGElementNode,
   fabricObjectsById: Record<string, FabricObject>,
   processedElements: Set<SVGElementNode> = new Set(),
+  constrainedWidth?: number,
+  changedElement?: SVGElementNode,
 ): Promise<void> {
   // First pass: try to find elements that contain the changed element
   const elementsToUpdate: SVGElementNode[] = []
@@ -375,6 +377,8 @@ export async function updateContainingSiblings(
           svgRoot,
           fabricObjectsById,
           processedElements,
+          constrainedWidth,
+          changedElement,
         )
         break
       }
@@ -388,6 +392,13 @@ export async function updateContainingSiblings(
   // This ensures clipPaths expand when their corresponding containers expand
   if (svgRoot) {
     await updateReferencedClipPaths(svgRoot, containerElement, changedElementBounds, deltaHeight)
+  }
+
+  // Also update filter defs that are referenced by text-only groups
+  // This handles Figma-style text effects where filters need to match text bounds
+  // Only do this when we're processing the SVG root to avoid multiple calls
+  if (svgRoot && containerElement.tagName === 'svg') {
+    await updateReferencedTextFilters(svgRoot, containerElement, changedElementBounds, deltaHeight, constrainedWidth, changedElement)
   }
 }
 
@@ -472,6 +483,108 @@ async function updateReferencedClipPaths(
 }
 
 /**
+ * Updates specific filter dimensions that are referenced by text-only groups
+ * This handles Figma-style text effects where filters need to match text bounds
+ */
+async function updateReferencedTextFilters(
+  svgTree: SVGElementNode,
+  containerElement: SVGElementNode,
+  changedElementBounds: ElementBounds,
+  deltaHeight: number,
+  constrainedWidth?: number,
+  changedElement?: SVGElementNode,
+): Promise<void> {
+  // Find all filter references in text-only groups
+  const filterUpdates: Array<{
+    filterId: string
+    newWidth?: number
+    shouldUpdateHeight: boolean
+  }> = []
+
+  function collectTextFilterReferences(element: SVGElementNode): void {
+    // Check if this is a group with a filter
+    if (element.tagName.toLowerCase() === 'g' && element.attributes.filter) {
+      // Extract filter ID from url(#filterId) format
+      const filterMatch = element.attributes.filter.match(/url\(#([^)]+)\)/)
+      if (filterMatch) {
+        const filterId = filterMatch[1]
+        
+        // Check if this group contains only one text element (and maybe other non-visual elements)
+        const visualChildren = element.children.filter(child => {
+          const tag = child.tagName.toLowerCase()
+          return !['defs', 'style', 'title', 'desc', 'metadata'].includes(tag)
+        })
+        
+        if (visualChildren.length === 1 && visualChildren[0].tagName.toLowerCase() === 'text') {
+          const textElement = visualChildren[0]
+          
+          // Only update filter if this text element is the one that actually changed
+          // This prevents filters from being affected by other text changes above them
+          if (changedElement && textElement === changedElement) {
+            // Find the component for this text to check if it has constrained rendering
+            // For now, we'll use a heuristic: if text expanded significantly, it was constrained
+            const hasConstrainedWidth = deltaHeight > 0 // Text expanded, likely was constrained
+            
+            if (hasConstrainedWidth && constrainedWidth) {
+              filterUpdates.push({
+                filterId,
+                newWidth: constrainedWidth,
+                shouldUpdateHeight: true
+              })
+            }
+          }
+        }
+      }
+    }
+
+    // Recursively check children
+    element.children.forEach(collectTextFilterReferences)
+  }
+
+  collectTextFilterReferences(containerElement)
+
+  if (filterUpdates.length === 0) return
+
+  // Find the defs element in the SVG tree
+  function findDefs(element: SVGElementNode): SVGElementNode | null {
+    for (const child of element.children) {
+      if (child.tagName.toLowerCase() === 'defs') {
+        return child
+      }
+      const found = findDefs(child)
+      if (found) return found
+    }
+    return null
+  }
+
+  const defsElement = findDefs(svgTree)
+  if (!defsElement) return
+
+  // Update the filter dimensions
+  for (const update of filterUpdates) {
+    for (const child of defsElement.children) {
+      if (child.tagName.toLowerCase() === 'filter' && child.attributes.id === update.filterId) {
+        // Update filter height (move it down and increase height)
+        if (update.shouldUpdateHeight && child.attributes.height) {
+          const currentHeight = parseFloat(child.attributes.height)
+          const newHeight = Math.max(0, currentHeight + deltaHeight)
+          child.attributes.height = String(newHeight)
+        }
+
+        // Update filter width to match constrained text width
+        if (update.newWidth && child.attributes.width) {
+          child.attributes.width = String(update.newWidth)
+        }
+        
+        // For filters, we typically don't move the y position since they're relative to the text
+        // The filter effect should stay relative to the text position
+        break
+      }
+    }
+  }
+}
+
+/**
  * Finds the parent element of a given element in the SVG tree
  */
 function findParentElement(
@@ -504,6 +617,7 @@ export async function updateElementAndAncestors(
   changedElementOriginalBounds: ElementBounds,
   deltaHeight: number,
   fabricObjectsById: Record<string, FabricObject>,
+  constrainedWidth?: number,
 ): Promise<void> {
   if (deltaHeight === 0) return
 
@@ -536,6 +650,8 @@ export async function updateElementAndAncestors(
       svgTree,
       fabricObjectsById,
       processedElements,
+      constrainedWidth,
+      changedElement,
     )
 
     // If parent is the SVG root, also update SVG dimensions
@@ -574,6 +690,7 @@ export async function handleTextHeightChange(
   textElement: SVGElementNode,
   deltaHeight: number,
   originalBounds: ElementBounds,
+  constrainedWidth?: number,
 ): Promise<void> {
   // Load fabric objects once for all bounds calculations
   const svgString = serializeSVG(svgTree)
@@ -593,5 +710,6 @@ export async function handleTextHeightChange(
     boundsForContainment,
     deltaHeight,
     fabricObjectsById,
+    constrainedWidth,
   )
 }
